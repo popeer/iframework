@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chanjet.chanapp.qa.iFramework.common.mapper.IModuleMapper">
+
+    <select id="findModule" resultType="com.chanjet.chanapp.qa.iFramework.common.DTO.ModuleDto">
+        select *
+        from qa.module where name=#{name,jdbcType=VARCHAR};
+    </select>
+
+    <update id="updateModule" parameterType="com.chanjet.chanapp.qa.iFramework.common.DTO.ModuleDto">
+        update qa.module
+        <set>
+            <if test="name != null">
+                name = #{name,jdbcType=VARCHAR},
+            </if>
+            <if test="memo != null">
+                memo = #{memo,jdbcType=VARCHAR}
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER};
+    </update>
+
+    <insert id="addModule" parameterType="com.chanjet.chanapp.qa.iFramework.common.DTO.ModuleDto">
+        INSERT INTO qa.module(
+        name,memo)
+        VALUES (
+        #{name,jdbcType=VARCHAR},
+        #{memo,jdbcType=VARCHAR});
+    </insert>
+
+    <update id="deleteModule" parameterType="long">
+        delete from qa.module where id=#{id,jdbcType=INTEGER};
+    </update>
+</mapper>

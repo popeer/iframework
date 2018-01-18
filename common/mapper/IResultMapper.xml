@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chanjet.chanapp.qa.iFramework.common.mapper.IResultMapper">
+    
+    <!--<parameterMap id="resultParaMap" type="com.chanjet.chanapp.qa.iFramework.common.DTO.ResultDto">-->
+        <!--<parameter property="id" resultMap="id" />-->
+        <!--<parameter property="user_id" resultMap="user_id" />-->
+        <!--<parameter property="module_id" resultMap="interfaceName" />-->
+        <!--<parameter property="version_id" resultMap="version_id" />-->
+        <!--<parameter property="is_passed" resultMap="is_passed" />-->
+        <!--<parameter property="case_info" resultMap="case_info" />-->
+        <!--<parameter property="runDateTime" resultMap="runDateTime" />-->
+        <!--<parameter property="environment" resultMap="environment" />-->
+        <!--<parameter property="step_name" resultMap="step_name" />-->
+        <!--<parameter property="node_name" resultMap="node_name" />-->
+    <!--</parameterMap>-->
+    
+    <resultMap id="resultMapped" type="com.chanjet.chanapp.qa.iFramework.common.DTO.ResultDto">
+        <result column="id" property="id" />
+        <result column="user_id" property="user_id" />
+        <result column="module_id" property="module_id" />
+        <result column="version_id" property="version_id" />
+        <result column="is_passed" property="is_passed" />
+        <result column="case_info" property="case_info" />
+        <result column="rundatetime" property="rundatetime" />
+        <result column="environment" property="environment" />
+        <result column="step_name" property="step_name" />
+        <result column="node_name" property="node_name" />
+    </resultMap>
+
+    <!--<select id="findResults" resultMap="resultMapped"-->
+            <!--resultType="com.chanjet.chanapp.qa.iFramework.common.DTO.ResultDto" parameterType="com.chanjet.chanapp.qa.iFramework.common.DTO.ResultDto">-->
+        <!--select *-->
+        <!--from qa.reslult where 1=1-->
+        <!--<if test="user_id != 0">-->
+            <!--and  user_id=#{user_id,jdbcType=INTEGER}-->
+        <!--</if>-->
+        <!--<if test="module_id != 0">-->
+           <!--and module_id=#{module_id,jdbcType=INTEGER}-->
+        <!--</if>-->
+        <!--<if test="version_id != 0">-->
+           <!--and version_id=#{version_id,jdbcType=INTEGER}-->
+        <!--</if>-->
+        <!--<if test="is_passed != null">-->
+          <!--and  is_passed=#{is_passed,jdbcType=BOOLEAN}-->
+        <!--</if>-->
+        <!--<if test="case_info != null and !case_info.isEmpty()">-->
+           <!--and case_info like '%'||#{case_info,jdbcType=VARCHAR}||'%'-->
+        <!--</if>-->
+        <!--order by id;-->
+    <!--</select>-->
+
+    <!--<update id="updateResult" parameterType="com.chanjet.chanapp.qa.iFramework.common.DTO.ResultDto">-->
+        <!--update qa.result-->
+        <!--<set>-->
+            <!--<if test="user_id != 0">-->
+                <!--user_id = #{user_id,jdbcType=INTEGER},-->
+            <!--</if>-->
+            <!--<if test="version_id != 0">-->
+                <!--version_id = #{version_id,jdbcType=INTEGER},-->
+            <!--</if>-->
+            <!--<if test="module_id != 0">-->
+                <!--module_id = #{module_id,jdbcType=INTEGER},-->
+            <!--</if>-->
+            <!--<if test="is_passed != null">-->
+                <!--is_passed = #{is_passed,jdbcType=BOOLEAN},-->
+            <!--</if>-->
+            <!--<if test="case_info != null and !case_info.isEmpty()">-->
+                <!--case_info = #{case_info,jdbcType=VARCHAR}-->
+            <!--</if>-->
+        <!--</set>-->
+        <!--where id = #{id,jdbcType=INTEGER};-->
+    <!--</update>-->
+
+    <insert id="addResult">
+        INSERT INTO qa.result(
+        user_id,version_id,module_id,is_passed,case_info,rundatetime,environment,step_name,node_name)
+        VALUES (
+        #{user_id,jdbcType=VARCHAR},
+        #{version_id,jdbcType=INTEGER},
+        #{module_id,jdbcType=VARCHAR},
+        #{is_passed,jdbcType=BOOLEAN},
+        #{case_info,jdbcType=VARCHAR},
+        #{rundatetime,jdbcType=VARCHAR},
+        #{environment,jdbcType=VARCHAR},
+        #{step_name,jdbcType=VARCHAR},
+        #{node_name,jdbcType=VARCHAR});
+    </insert>
+
+    <!--<update id="deleteResult" parameterType="long">-->
+        <!--delete from qa.result where id=#{id,jdbcType=INTEGER};-->
+    <!--</update>-->
+
+    <select id="getResult" resultMap="resultMapped" resultType="com.chanjet.chanapp.qa.iFramework.common.DTO.ResultDto">
+    select *
+    from qa.result where version_id=#{version_id}
+    order by id ;
+    </select>
+</mapper>

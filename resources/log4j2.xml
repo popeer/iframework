@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="warn">
+    <appenders>
+        <RollingFile name="myFile" fileName="/var/log/iframework.log"
+                     filePattern="/var/log/iframework.log.%d{yyyy-MM-dd}" append="true">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss,SSS}]  %-5p [%t] (%c:%L) - %m%n"/>
+            <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            <DefaultRolloverStrategy max="7"/>
+        </RollingFile>
+        <RollingFile name="myErrorFile" fileName="/var/log/iframework-error.log"
+                     filePattern="/var/log/iframework-error.log.%d{yyyy-MM-dd}" append="true">
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss,SSS}]  %-5p [%t] (%c:%L) - %m%n"/>
+            <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+            <DefaultRolloverStrategy max="7"/>
+        </RollingFile>
+        <Console name="myConsole" target="SYSTEM_OUT">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss,SSS}] %-5p [%t] %c{2} - %m%n"/>
+        </Console>
+    </appenders>
+    <loggers>
+        <root level="INFO">
+            <appender-ref ref="myConsole"/>
+            <appender-ref ref="myFile"/>
+            <appenderRef ref="myErrorFile"/>
+        </root>
+    </loggers>
+</configuration>

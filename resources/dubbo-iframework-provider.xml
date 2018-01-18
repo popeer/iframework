@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- - Copyright 1999-2011 Alibaba Group. - - Licensed under the Apache License,
+	Version 2.0 (the "License"); - you may not use this file except in compliance
+	with the License. - You may obtain a copy of the License at - - http://www.apache.org/licenses/LICENSE-2.0
+	- - Unless required by applicable law or agreed to in writing, software -
+	distributed under the License is distributed on an "AS IS" BASIS, - WITHOUT
+	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the
+	License for the specific language governing permissions and - limitations
+	under the License. -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+	http://code.alibabatech.com/schema/dubbo http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+    <dubbo:application name="iframework" owner="chanjet" organization="chanjet" />
+
+    <dubbo:registry protocol="zookeeper" address="172.16.200.18:2182,172.16.200.12:2182,172.16.200.19:2182" />
+
+    <dubbo:protocol name="dubbo" dispatcher="all" threadpool="fixed" threads="200"/>
+
+    <dubbo:protocol name="rest" port="8888" threads="200"
+                    contextpath="/" server="tomcat" accepts="200"/>
+
+    <dubbo:annotation package="com.chanjet.chanapp.qa.iFramework" />
+
+    <bean id="driver"
+          class="com.chanjet.chanapp.qa.iFramework.common.processor.Driver" >
+        <property name="xmlTcm">
+            <bean class="com.chanjet.chanapp.qa.iFramework.common.xml.XmlTcm"/>
+        </property>
+    </bean>
+
+    <dubbo:service
+            interface="com.chanjet.chanapp.qa.iFramework.common.IDriver"
+            ref="driver" protocol="dubbo" />
+
+    <bean id="remoteStarter"
+          class="com.chanjet.chanapp.qa.iFramework.common.processor.RemoteStarter" >
+
+        <property name="dataManager" ref="dataManager" />
+        <property name="verifier" ref="verifier" />
+        <property name="driver" ref="driver"/>
+    </bean>
+
+    <dubbo:service interface="com.chanjet.chanapp.qa.iFramework.common.IRemoteStarter"
+                   ref="remoteStarter" protocol="rest" >
+        <dubbo:method name="run" />
+        <dubbo:method name="getSummary" />
+        <dubbo:method name="getDirectoriesFiles" />
+        <dubbo:method name="showXml" />
+        <dubbo:method name="getHistoryReportList" />
+        <dubbo:method name="getReport" />
+        <dubbo:method name="editXml" />
+    </dubbo:service>
+
+    <bean id="httpExcutor"
+          class="com.chanjet.chanapp.qa.iFramework.common.impl.HttpExcutor" />
+
+    <dubbo:service
+            interface="com.chanjet.chanapp.qa.iFramework.common.IExecutor"
+            ref="httpExcutor" protocol="dubbo" />
+
+    <bean id="verifier"
+          class="com.chanjet.chanapp.qa.iFramework.common.impl.VerifierImpl" />
+
+    <dubbo:service
+            interface="com.chanjet.chanapp.qa.iFramework.common.IVerifier"
+            ref="verifier" protocol="dubbo" />
+
+    <bean id="dataManager"
+          class="com.chanjet.chanapp.qa.iFramework.common.impl.DataManagerImpl" >
+    </bean>
+
+    <bean id="testStep"
+          class="com.chanjet.chanapp.qa.iFramework.Entity.TestCase" />
+
+    <dubbo:service
+            interface="com.chanjet.chanapp.qa.iFramework.common.ITestCase"
+            ref="testStep" protocol="dubbo" />
+
+    <bean id="testCaseManagerBase"
+          class="com.chanjet.chanapp.qa.iFramework.common.processor.TestCaseManagerBase" >
+        <property name="config">
+            <bean class="com.chanjet.chanapp.qa.iFramework.common.xml.Config"/>
+        </property>
+    </bean>
+
+    <dubbo:service
+            interface="com.chanjet.chanapp.qa.iFramework.common.ITestCaseManager"
+            ref="testCaseManagerBase" protocol="dubbo" />
+
+    <bean id="xmlTcm"
+            class="com.chanjet.chanapp.qa.iFramework.common.xml.XmlTcm" >
+    </bean>
+
+    <bean id="config"
+          class="com.chanjet.chanapp.qa.iFramework.common.xml.Config" >
+    </bean>
+
+    <bean id="step"
+          class="com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step" >
+    </bean>
+
+    <bean id="iResultDao"
+          class="com.chanjet.chanapp.qa.iFramework.common.DAO.Base.impl.IResultDaoImpl">
+    </bean>
+
+
+</beans>
