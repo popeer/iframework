@@ -1106,32 +1106,6 @@ public class Parser {
 
     }
 
-    public String decrypt(String encText){
-        if(StringUtils.isEmptyOrSpace(encText)){
-            return encText;
-        }
-
-        try {
-            HttpClient httpClient = new HttpClient();
-            PostMethod method = new PostMethod("http://cenc.chanapp.chanjet.com/special/v1/product/decodeByChallengeCode");
-            method.getParams().setParameter("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-            method.getParams().setParameter("Accept", "text/plain");
-            method.addParameter("appKey", "d06be956-9f54-11e3-a65e-2b1864772b74");
-            method.addParameter("encText", encText);
-            method.addParameter("clientChallengeCode", "Ixfdlq2M2x2CNAWFpihOe/Ab/7bO88K1rwBbMW1p/6BBOmIK1EUVKOist427z85tDf15GnhhXK4FefWfjneIoLbi0Hz5fuwsxgKnM3tVFb7Qe1KJQ2wslmig+5H7Umo1eLgvj0O7Wa777grrvfbpBJ12wucaMWx48ahkdqukrq9MyBf9WvHo4IELPjTLs2bQUivG/M91Odu996bVUO1JCG7Jh137gTuqDK1B3fdl4tCJ3VB5xdSU4A7d35M/2sHcoUEGfqS1MUfYTjLXlzDcEohPTR0mspNf58kdkM+5nqDFs/8vhVbIaXiIw855D7iWdn1VTZpuHVCboTeLEoGdGQ==");
-
-            httpClient.executeMethod(method);
-            String body = method.getResponseBodyAsString();
-            log.info("body=" + body);
-
-            JSONObject resultObject = JSONObject.parseObject(body);
-            return resultObject.get("value").toString();
-        } catch (Exception ex){
-            log.error("Fail to descrypt text:" + encText);
-        }
-        return "";
-    }
-
     public static String JM(String inStr) {
         char[] a = inStr.toCharArray();
         for (int i = 0; i < a.length; i++) {
