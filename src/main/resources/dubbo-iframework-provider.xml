@@ -14,7 +14,7 @@
 
     <dubbo:application name="iframework" owner="chanjet" organization="chanjet" />
 
-    <dubbo:registry protocol="zookeeper" address="172.16.200.18:2182,172.16.200.12:2182,172.16.200.19:2182" />
+    <dubbo:registry protocol="zookeeper" address="fakedip:2182,fakedip:2182,fakedip:2182" />
 
     <dubbo:protocol name="dubbo" dispatcher="all" threadpool="fixed" threads="200"/>
 
