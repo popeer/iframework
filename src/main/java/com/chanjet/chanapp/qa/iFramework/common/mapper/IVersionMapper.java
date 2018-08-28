@@ -12,5 +12,5 @@ public interface IVersionMapper {
     long generateVersionId();
     void addVersion(long id);
     int addVersionPn(VersionDto versionDto);
-    List<VersionDto> findVersionByPn(@Param("pn")String pn, @Param("date") String date);
+    List<VersionDto> findVersionByPn(@Param("pn") String pn, @Param("date") String date);
 }

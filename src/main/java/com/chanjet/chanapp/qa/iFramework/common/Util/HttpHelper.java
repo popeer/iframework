@@ -1,26 +1,30 @@
 package com.chanjet.chanapp.qa.iFramework.common.Util;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.chanjet.chanapp.qa.iFramework.common.Util.StringUtils;
 import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthScope;
-import org.apache.commons.httpclient.methods.ByteArrayRequestEntity;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.RequestEntity;
+import org.apache.commons.httpclient.methods.*;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 import org.apache.http.Consts;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.CookieStore;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContextBuilder;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicHeader;
@@ -44,6 +48,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by houhja on 10/20/16.
@@ -85,11 +90,18 @@ public class HttpHelper {
         }
     }
 
-    public static JSONObject httpGet(String url, Cookie[]... cookies) throws Exception {
-        URL newUrl = new URL(url);
-        java.net.URI uri = new java.net.URI(newUrl.getProtocol(), newUrl.getHost(), newUrl.getPath(), newUrl.getQuery(), null);
-        HttpGet httpGet = new HttpGet();
-        httpGet.setURI(uri);
+    public static Object httpGet(String url, Cookie[]... cookies) throws Exception {
+        HttpGet httpGet = null;
+
+        if(UrlEncoderUtil.hasUrlEncoded(url)){
+            httpGet = new HttpGet(url);
+        } else {
+            URL newUrl = new URL(url);
+            java.net.URI uri = new java.net.URI(newUrl.getProtocol(), newUrl.getUserInfo(), newUrl.getHost(), newUrl.getPort(), newUrl.getPath(), newUrl.getQuery(), null);
+            httpGet = new HttpGet();
+            httpGet.setURI(uri);
+        }
+
         CloseableHttpResponse response = null;
         CloseableHttpClient httpClient = HttpClients.createDefault();
         if (url.startsWith("https")) {
@@ -116,14 +128,8 @@ public class HttpHelper {
 //                logger.warn("request url failed, http code=" + response.getStatusLine().getStatusCode()
 //                        + ", url=" + url);
                 if(entity != null){
-                    JSONObject result = new JSONObject();
-                    result = JSON.parseObject(httpResponse);
-                    if (result.containsKey("errcode") && result.getIntValue("errcode") != 0) {
-                        int errCode = result.getIntValue("errcode");
-                        String errMsg = result.getString("errmsg");
-//                        logger.warn("request failed, url: {}, errcode: {}, errmsg: {}", url, errCode, errMsg);
-                        throw new Exception(errMsg);
-                    }
+                    Object result = null;
+                    result = initResult(httpResponse);
                     return result;
                 }
                 return null;
@@ -133,19 +139,15 @@ public class HttpHelper {
 
 //                logger.info("httpResponse, url: {}, response: {}", url, httpResponse);
                 if (StringUtils.isNotEmpty(httpResponse)) {
-                    JSONObject result = new JSONObject();
+                    Object result = null;
                     if(httpResponse.startsWith("<!DOCTYPE html>")){
-                        result.put("success", "false");
-                        result.put("actual html result", httpResponse);
-                        result.put("message", "customer return by iframework as response is a html!");
-                    } else{
-                        result = JSON.parseObject(httpResponse);
-                        if (result.containsKey("errcode") && result.getIntValue("errcode") != 0) {
-                            int errCode = result.getIntValue("errcode");
-                            String errMsg = result.getString("errmsg");
-//                        logger.warn("request failed, url: {}, errcode: {}, errmsg: {}", url, errCode, errMsg);
-                            throw new Exception(errMsg);
-                        }
+                        JSONObject jsonObjectResult = new JSONObject();
+                        jsonObjectResult.put("success", "false");
+                        jsonObjectResult.put("actual html result", httpResponse);
+                        jsonObjectResult.put("message", "customer return by iframework as response is a html!");
+                        result = jsonObjectResult;
+                    } else {
+                        result = initResult(httpResponse);
                     }
                     return result;
                 }
@@ -187,12 +189,8 @@ public class HttpHelper {
 
         url += param;
 
-        if(url.startsWith("http://passport.chanjet.")){
-            String s = "d";
-        }
-
         try {
-            JSONObject response = HttpHelper.httpGet(url);
+            Object response = HttpHelper.httpGet(url);
             log.info("response=" + response);
             return response.toString();
         } catch (Exception e){
@@ -218,12 +216,87 @@ public class HttpHelper {
         url += param;
 
         try {
-            JSONObject response = HttpHelper.httpGet(url);
+            Object response = HttpHelper.httpGet(url);
             log.info("response=" + response);
             return response.toString();
         } catch (Exception e){
             log.error("Http get occur error!url=" + url + ",exception:" + e.getStackTrace());
             return "Http get occur error!url=" + url + ",exception:" + e.getStackTrace();
+        }
+
+    }
+
+    public static List<Object> doGetCookie(String url, Map<String, String> params) throws Exception {
+
+        StringBuffer param = new StringBuffer();
+        int i = 0;
+        for (String key : params.keySet()) {
+            if (i == 0)
+                param.append("?");
+            else
+                param.append("&");
+            param.append(key).append("=").append(params.get(key));
+            i++;
+        }
+
+        url += param;
+
+        CookieStore cookieStore = new BasicCookieStore();
+        try {
+            JSONObject response = new JSONObject();
+            log.info("response=" + response);
+
+            CloseableHttpClient httpClient = HttpClients.custom().setDefaultCookieStore(cookieStore).build();
+            BufferedReader in = null;
+            String result = "";
+            try {
+                RequestConfig config = RequestConfig.custom().setSocketTimeout(30000).setConnectTimeout(30000).build();
+                HttpGet method = new HttpGet(url);
+                method.setConfig(config);
+                method.getParams().setParameter("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+                method.getParams().setParameter("Accept", "text/plain");
+
+                CloseableHttpResponse httpResponse = httpClient.execute(method);
+                HttpEntity entity = httpResponse.getEntity();
+                if(null == entity){
+                    in = new BufferedReader(new InputStreamReader( null, "UTF-8"));
+                } else{
+                    in = new BufferedReader(new InputStreamReader(entity.getContent(), "UTF-8"));
+                }
+                String line;
+                while ((line = in.readLine()) != null) {
+                    result += line;
+                }
+                log.info(result);
+
+                if(result.startsWith("jsonp%callback%({")){
+                    result = result.replace("jsonp%callback%(", "");
+                    result = result.substring(0, result.length() - 2);
+                    log.info("response=" + result);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    httpClient.close();
+                    if (in!=null){
+                        in.close();
+                    }
+                } catch (IOException e) {
+                }
+            }
+
+            List<org.apache.http.cookie.Cookie> cookies = cookieStore.getCookies();
+
+            List<Object> results = new ArrayList<Object>();
+            results.add(JSONObject.parseObject(result));
+            results.add(cookies);
+
+            return results;
+        } catch (Exception e){
+            log.error("Http get occur error!url=" + url + ",exception:" + e.getStackTrace());
+            return null;
         }
 
     }
@@ -253,7 +326,7 @@ public class HttpHelper {
         return results;
     }
 
-    public static JSONObject doPostSetCookie(String url, Map<String, String> data, Cookie[] cookie) throws Exception{
+    public static Object doPostSetCookie(String url, Map<String, String> data, Cookie[] cookie) throws Exception{
         HttpClient httpClient = new HttpClient();
         PostMethod method = new PostMethod(url);
         method.setURI(new URI(url, false));
@@ -276,7 +349,7 @@ public class HttpHelper {
         return initResult(body);
     }
 
-    public static JSONObject doPost(String url, Map<String, String> data) throws Exception{
+    public static Object doPost(String url, Map<String, String> data) throws Exception{
         HttpClient httpClient = new HttpClient();
         PostMethod method = new PostMethod(url);
         method.setURI(new URI(url, false));
@@ -298,20 +371,29 @@ public class HttpHelper {
         return initResult(body);
     }
 
-    private static JSONObject initResult(String body){
+    private static Object initResult(String body){
 
-        JSONObject result;
+        Object result;
         try{
-            result = JSONObject.parseObject(body);
+            Object objResult = JSON.parse(body);
+            switch (objResult.getClass().getName()){
+                case "com.alibaba.fastjson.JSONObject":
+                    result = JSONObject.parseObject(body);
+                    break;
+                case "com.alibaba.fastjson.JSONArray":
+                    result = JSONArray.parse(body);
+                    break;
+                default:
+                    result = body;
+                    break;
+            }
         } catch (Exception ex){
-            result = new JSONObject();
-            result.put("success", "false");
-            result.put("result", body);
+            result = body;
         }
         return result;
     }
 
-    public static JSONObject doPostSetHeader(String url, Map<String, String> data, Map<String, String> headers) throws Exception{
+    public static Object doPostSetHeader(String url, Map<String, String> data, Map<String, String> headers) throws Exception{
         CloseableHttpClient httpClient = HttpClients.createDefault();
         BufferedReader in = null;
         String result = "";
@@ -319,8 +401,8 @@ public class HttpHelper {
             RequestConfig config = RequestConfig.custom().setSocketTimeout(30000).setConnectTimeout(30000).build();
             HttpPost method = new HttpPost(url);
             method.setConfig(config);
-            method.getParams().setParameter("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-            method.getParams().setParameter("Accept", "text/plain");
+            method.addHeader("Accept", "text/plain");
+            method.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
 
             List<org.apache.http.NameValuePair> paramList = new ArrayList<org.apache.http.NameValuePair>();
             for(Map.Entry<String,String> entity : data.entrySet()){
@@ -338,7 +420,12 @@ public class HttpHelper {
 
             CloseableHttpResponse response = httpClient.execute(method);
             HttpEntity entity = response.getEntity();
-            in = new BufferedReader(new InputStreamReader(entity.getContent(), "UTF-8"));
+            if(null == entity){
+                in = new BufferedReader(new InputStreamReader( null, "UTF-8"));
+            } else{
+                in = new BufferedReader(new InputStreamReader(entity.getContent(), "UTF-8"));
+            }
+
             String line;
             while ((line = in.readLine()) != null) {
                 result += line;
@@ -365,7 +452,7 @@ public class HttpHelper {
         }
     }
 
-    public static JSONObject doGetSetHeader(String url, Map<String, String> data, Map<String, String> headers) throws Exception{
+    public static Object doGetSetHeader(String url, Map<String, String> data, Map<String, String> headers) throws Exception{
         CloseableHttpClient httpClient = HttpClients.createDefault();
         BufferedReader in = null;
         String result = "";
@@ -390,7 +477,11 @@ public class HttpHelper {
 
             CloseableHttpResponse response = httpClient.execute(method);
             HttpEntity entity = response.getEntity();
-            in = new BufferedReader(new InputStreamReader(entity.getContent(), "UTF-8"));
+            if(null == entity){
+                in = new BufferedReader(new InputStreamReader( null, "UTF-8"));
+            } else{
+                in = new BufferedReader(new InputStreamReader(entity.getContent(), "UTF-8"));
+            }
             String line;
             while ((line = in.readLine()) != null) {
                 result += line;
@@ -417,7 +508,7 @@ public class HttpHelper {
         }
     }
 
-    public static JSONObject doPostSingleKey(String url, Map<String, String> data, Map<String, String> headers) throws Exception{
+    public static Object doPostSingleKey(String url, Map<String, String> data, Map<String, String> headers) throws Exception{
         CloseableHttpClient httpClient = HttpClients.createDefault();
         BufferedReader in = null;
         String result = "";
@@ -447,7 +538,11 @@ public class HttpHelper {
 
             CloseableHttpResponse response = httpClient.execute(method);
             HttpEntity entity = response.getEntity();
-            in = new BufferedReader(new InputStreamReader(entity.getContent(), "UTF-8"));
+            if(null == entity){
+                in = new BufferedReader(new InputStreamReader( null, "UTF-8"));
+            } else{
+                in = new BufferedReader(new InputStreamReader(entity.getContent(), "UTF-8"));
+            }
             String line;
             while ((line = in.readLine()) != null) {
                 result += line;
@@ -474,7 +569,7 @@ public class HttpHelper {
         }
     }
 
-    public static JSONObject doGetSingleKey(String url, Map<String, String> data, Map<String, String> headers) throws Exception{
+    public static Object doGetSingleKey(String url, Map<String, String> data, Map<String, String> headers) throws Exception{
         CloseableHttpClient httpClient = HttpClients.createDefault();
         BufferedReader in = null;
         String result = "";
@@ -502,7 +597,11 @@ public class HttpHelper {
 
             CloseableHttpResponse response = httpClient.execute(method);
             HttpEntity entity = response.getEntity();
-            in = new BufferedReader(new InputStreamReader(entity.getContent(), "UTF-8"));
+            if(null == entity){
+                in = new BufferedReader(new InputStreamReader( null, "UTF-8"));
+            } else{
+                in = new BufferedReader(new InputStreamReader(entity.getContent(), "UTF-8"));
+            }
             String line;
             while ((line = in.readLine()) != null) {
                 result += line;
@@ -529,11 +628,9 @@ public class HttpHelper {
         }
     }
 
-    public static JSONObject doPostSetHeaderCookie(String url, Map<String, String> data, Map<String, String> headers, Cookie[] cookie) throws Exception{
+    public static Object doPostSetHeaderCookie(String url, Map<String, String> data, Map<String, String> headers, Cookie[] cookie) throws Exception{
         HttpClient httpClient = new HttpClient();
         PostMethod method = new PostMethod(url);
-        method.getParams().setParameter("Content-Type", "text/json");
-        method.getParams().setParameter("Accept", "application/json");
         for(Map.Entry<String,String> entity : data.entrySet()){
             if(StringUtils.isEmptyOrSpace(entity.getValue())){
 //                RequestEntity requestEntity = new StringRequestEntity(entity.getKey());
@@ -561,6 +658,313 @@ public class HttpHelper {
         return initResult(body);
     }
 
+    public static Object doGetSetHeaderCookie(String url, Map<String, String> data, Map<String, String> headers, Cookie[] cookie) throws Exception{
+        String params = "";
+        for(Map.Entry<String,String> entity : data.entrySet()){
+            if(StringUtils.isEmptyOrSpace(entity.getValue())){
+                params += entity.getKey();
+            }
+        }
+
+        if(!StringUtils.isEmptyOrSpace(params)) {
+            url += "?" + params;
+        }
+
+        GetMethod method = new GetMethod(url);
+        method.getParams().setParameter("Content-Type", "text/json");
+        method.getParams().setParameter("Accept", "application/json");
+
+        for(Map.Entry<String,String> entity : headers.entrySet()){
+            method.setRequestHeader(entity.getKey(), entity.getValue());
+        }
+
+        HttpClient httpClient = new HttpClient();
+        httpClient.getState().addCookies(cookie);
+        httpClient.executeMethod(method);
+        String body = method.getResponseBodyAsString();
+        log.info("response=" + body);
+        if(body.startsWith("jsonp%callback%({")){
+            body = body.replace("jsonp%callback%(", "");
+            body = body.substring(0, body.length() - 2);
+            log.info("response=" + body);
+        }
+
+        return initResult(body);
+    }
+
+    public static Object doPostJson(String url, Map<String, String> data) throws Exception{
+        HttpClient httpClient = new HttpClient();
+        PostMethod method = new PostMethod(url);
+//        method.getParams().setParameter("Content-Type", "application/json;charset=utf-8");
+//        method.getParams().setParameter("Accept", "application/json");
+
+
+        method.setRequestHeader("Content-Type", "application/json;charset=utf-8");
+        method.setRequestHeader("Accept", "application/json");
+
+        log.info("url:" + url);
+
+        for(Map.Entry<String,String> entity : data.entrySet()){
+            if(StringUtils.isEmptyOrSpace(entity.getValue())){
+                RequestEntity requestEntity = new ByteArrayRequestEntity(entity.getKey().getBytes());
+                method.setRequestEntity(requestEntity);
+            } else {
+                method.addParameter(entity.getKey(), entity.getValue());
+            }
+            log.info("key:" + entity.getKey() + " , value:" + entity.getValue());
+        }
+
+//        HttpPost httpPost = new HttpPost(url);
+//        CloseableHttpResponse response = null;
+//        CloseableHttpClient httpClient = HttpClients.createDefault();
+//        if (url.startsWith("https")) {
+//            try {
+//                httpClient = createSSLInsecureClient();
+//            } catch (GeneralSecurityException e) {
+////                logger.error("httpGet", e);
+//            }
+//        }
+//        RequestConfig requestConfig = RequestConfig.custom().setConnectionRequestTimeout(CONNECTION_REQUEST_TIMEOUT).setSocketTimeout(SOCKET_TIMEOUT)
+//                .setConnectTimeout(CONNECT_TIMEOUT).build();
+//        httpPost.setConfig(requestConfig);
+//        httpPost.addHeader("Content-Type", "application/JSON;charset=UTF-8");
+//
+//        try {
+//            String body = JSON.toJSONString(data);
+//
+//            StringEntity requestEntity = new StringEntity(body, "utf-8");
+//            httpPost.setEntity(requestEntity);
+//
+//            response = httpClient.execute(httpPost, new BasicHttpContext());
+//
+//            if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+//                return null;
+//            }
+//            HttpEntity entity = response.getEntity();
+//            if (entity != null) {
+//                String httpResponse = EntityUtils.toString(entity, "utf-8");
+//
+//                if (StringUtils.isNotEmpty(httpResponse)) {
+//                    JSONObject result = JSON.parseObject(httpResponse);
+//                    if (result.containsKey("errcode") && result.getIntValue("errcode") != 0) {
+//                        int errCode = result.getIntValue("errcode");
+//                        String errMsg = result.getString("errmsg");
+//                        throw new Exception(errMsg);
+//                    }
+//                    return result;
+//                }
+//            }
+//        } catch (IOException e) {
+//
+//        } finally {
+//            if (response != null)
+//                try {
+//                    response.close();
+//                } catch (IOException e) {
+//
+//                }
+//        }
+
+
+        httpClient.executeMethod(method);
+        String body = method.getResponseBodyAsString();
+        log.info("response=" + body);
+        if(body.startsWith("jsonp%callback%({")){
+            body = body.replace("jsonp%callback%(", "");
+            body = body.substring(0, body.length() - 2);
+            log.info("response=" + body);
+        }
+
+        return initResult(body);
+    }
+
+    public static Object doPostJsonHeader(String url, Map<String, String> data, Map<String, String> headerMaps) throws Exception{
+        HttpClient httpClient = new HttpClient();
+        PostMethod method = new PostMethod(url);
+//        method.getParams().setParameter("Content-Type", "application/json;charset=utf-8");
+//        method.getParams().setParameter("Accept", "application/json");
+
+
+        method.setRequestHeader("Content-Type", "application/json;charset=utf-8");
+        method.setRequestHeader("Accept", "application/json");
+
+
+
+        for(Map.Entry<String,String> entity : data.entrySet()){
+            if(StringUtils.isEmptyOrSpace(entity.getValue())){
+                RequestEntity requestEntity = new ByteArrayRequestEntity(entity.getKey().getBytes());
+                method.setRequestEntity(requestEntity);
+            } else {
+                method.addParameter(entity.getKey(), entity.getValue());
+            }
+        }
+
+        for(Map.Entry<String,String> entity : headerMaps.entrySet()){
+            method.setRequestHeader(entity.getKey(), entity.getValue());
+        }
+
+//        HttpPost httpPost = new HttpPost(url);
+//        CloseableHttpResponse response = null;
+//        CloseableHttpClient httpClient = HttpClients.createDefault();
+//        if (url.startsWith("https")) {
+//            try {
+//                httpClient = createSSLInsecureClient();
+//            } catch (GeneralSecurityException e) {
+////                logger.error("httpGet", e);
+//            }
+//        }
+//        RequestConfig requestConfig = RequestConfig.custom().setConnectionRequestTimeout(CONNECTION_REQUEST_TIMEOUT).setSocketTimeout(SOCKET_TIMEOUT)
+//                .setConnectTimeout(CONNECT_TIMEOUT).build();
+//        httpPost.setConfig(requestConfig);
+//        httpPost.addHeader("Content-Type", "application/JSON;charset=UTF-8");
+//
+//        try {
+//            String body = JSON.toJSONString(data);
+//
+//            StringEntity requestEntity = new StringEntity(body, "utf-8");
+//            httpPost.setEntity(requestEntity);
+//
+//            response = httpClient.execute(httpPost, new BasicHttpContext());
+//
+//            if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+//                return null;
+//            }
+//            HttpEntity entity = response.getEntity();
+//            if (entity != null) {
+//                String httpResponse = EntityUtils.toString(entity, "utf-8");
+//
+//                if (StringUtils.isNotEmpty(httpResponse)) {
+//                    JSONObject result = JSON.parseObject(httpResponse);
+//                    if (result.containsKey("errcode") && result.getIntValue("errcode") != 0) {
+//                        int errCode = result.getIntValue("errcode");
+//                        String errMsg = result.getString("errmsg");
+//                        throw new Exception(errMsg);
+//                    }
+//                    return result;
+//                }
+//            }
+//        } catch (IOException e) {
+//
+//        } finally {
+//            if (response != null)
+//                try {
+//                    response.close();
+//                } catch (IOException e) {
+//
+//                }
+//        }
+
+
+        httpClient.executeMethod(method);
+        String body = method.getResponseBodyAsString();
+        log.info("response=" + body);
+        if(body.startsWith("jsonp%callback%({")){
+            body = body.replace("jsonp%callback%(", "");
+            body = body.substring(0, body.length() - 2);
+            log.info("response=" + body);
+        }
+
+        return initResult(body);
+    }
+
+    /**
+     * 发送http delete请求
+     */
+    public static Object DELETE(String url,Map<String,String> dataForm, Map<String,String> headers) throws Exception{
+        HttpClient httpClient = new HttpClient();
+        DeleteMethod deleteMethod = new DeleteMethod(url);
+
+        if(null != headers && 0 < headers.size()){
+            for (Map.Entry<String, String> entry : headers.entrySet()){
+                deleteMethod.setRequestHeader(entry.getKey(), entry.getValue());
+            }
+        }
+
+        List<NameValuePair> data = new ArrayList<NameValuePair>();
+        if(dataForm!=null){
+            Set<String> keys = dataForm.keySet();
+            for(String key:keys){
+                NameValuePair nameValuePair = new NameValuePair(key, (String) dataForm.get(key));
+                data.add(nameValuePair);
+            }
+        }
+        deleteMethod.setQueryString(data.toArray(new NameValuePair[0]));
+        try {
+            int statusCode = httpClient.executeMethod(deleteMethod);
+
+            // Read the response body.
+            byte[] responseBody = deleteMethod.getResponseBody();
+            // Deal with the response.
+            // Use caution: ensure correct character encoding and is not binary data
+            String httpResponse = new String(responseBody);
+            if (StringUtils.isNotEmpty(httpResponse)) {
+                return initResult(httpResponse);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally {
+            deleteMethod.releaseConnection();
+        }
+        return null;
+    }
+
+    /**
+     * 发送 http put 请求，参数以原生字符串进行提交
+     * @param url
+     * @param data
+     * @param headers
+     * @return
+     */
+    public static Object PUT(String url, Map<String, String> data, Map<String,String> headers){
+        HttpResponse response = null;
+
+        CloseableHttpClient closeableHttpClient = HttpClients.createDefault();
+        HttpPut httpput = new HttpPut(url);
+
+        //设置header
+        httpput.setHeader("Content-type", "application/json");
+        if (headers != null && headers.size() > 0) {
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                httpput.setHeader(entry.getKey(),entry.getValue());
+            }
+        }
+        //组织请求参数
+        StringEntity stringEntity = null;
+        if(null != data && 0 < data.size()){
+            stringEntity = new StringEntity(JSON.toJSONString(data), "utf-8");
+        }
+
+        httpput.setEntity(stringEntity);
+        String content = null;
+        CloseableHttpResponse  httpResponse = null;
+        try {
+            //响应信息
+            httpResponse = closeableHttpClient.execute(httpput);
+            HttpEntity entity = httpResponse.getEntity();
+            if(null == entity){
+                content = "No Content";
+            } else{
+                content = EntityUtils.toString(entity, "utf-8");
+            }
+            return initResult(content);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally{
+            try {
+                httpResponse.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            closeableHttpClient.close();  //关闭连接、释放资源
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
     public static HttpClient getClient(){
 
         HostConfiguration hostConfig = new HostConfiguration();
@@ -581,15 +985,15 @@ public class HttpHelper {
         return httpClient;
     }
 
-    public static JSONObject httpPost(String url, String data) throws Exception {
+    public static Object httpPost(String url, String data) throws Exception {
         return httpPost(url, JSONObject.parseObject(data));
     }
 
-    public static JSONObject httpPost(String url, Map<String, String> data) throws Exception {
+    public static Object httpPost(String url, Map<String, String> data) throws Exception {
         return httpPost(url, JSONObject.toJSONString(data));
     }
 
-    public static JSONObject httpPost(String url, JSONObject data) throws Exception {
+    public static Object httpPost(String url, JSONObject data) throws Exception {
         HttpPost httpPost = new HttpPost(url);
         CloseableHttpResponse response = null;
         CloseableHttpClient httpClient = HttpClients.createDefault();
@@ -621,17 +1025,11 @@ public class HttpHelper {
             HttpEntity entity = response.getEntity();
             if (entity != null) {
                 String httpResponse = EntityUtils.toString(entity, "utf-8");
-//                logger.info("httpResponse, url: {}, response: {}", url, httpResponse);
+                Object result = null;
                 if (StringUtils.isNotEmpty(httpResponse)) {
-                    JSONObject result = JSON.parseObject(httpResponse);
-                    if (result.containsKey("errcode") && result.getIntValue("errcode") != 0) {
-                        int errCode = result.getIntValue("errcode");
-                        String errMsg = result.getString("errmsg");
-//                        logger.warn("request failed, url: {}, errcode: {}, errmsg: {}", url, errCode, errMsg);
-                        throw new Exception(errMsg);
-                    }
-                    return result;
+                    result = initResult(httpResponse);
                 }
+                return result;
             }
         } catch (IOException e) {
 //            logger.error("httpPost error", e);

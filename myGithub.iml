@@ -1,33 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module org.jetbrains.idea.maven.project.MavenProjectsManager.isMavenModule="true" type="JAVA_MODULE" version="4">
-  <component name="FacetManager">
-    <facet type="Spring" name="Spring">
-      <configuration>
-        <fileset id="fileset" name="Spring Application Context" removed="false">
-          <file>file://$MODULE_DIR$/src/main/resources/springcontext/applicationContext-configreader.xml</file>
-          <file>file://$MODULE_DIR$/src/main/resources/applicationContext-database.xml</file>
-          <file>file://$MODULE_DIR$/src/main/resources/applicationContext.xml</file>
-          <file>file://$MODULE_DIR$/src/main/resources/dubbo-iframework-provider.xml</file>
-          <file>jar://$MAVEN_REPOSITORY$/com/alibaba/citrus/citrus-webx-all/3.2.2/citrus-webx-all-3.2.2.jar!/META-INF/services/upload-examples.xml</file>
-          <file>file://$MAVEN_REPOSITORY$/com/alibaba/citrus/citrus-webx-all/3.2.2/citrus-webx-all-3.2.2.jar</file>
-          <file>jar://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.2.5.Final/netty-3.2.5.Final.jar!/org/jboss/netty/container/spring/beans.xml</file>
-          <file>file://$MAVEN_REPOSITORY$/org/jboss/netty/netty/3.2.5.Final/netty-3.2.5.Final.jar</file>
-          <file>jar://$MAVEN_REPOSITORY$/io/netty/netty/3.6.4.Final/netty-3.6.4.Final.jar!/org/jboss/netty/container/spring/beans.xml</file>
-          <file>file://$MAVEN_REPOSITORY$/io/netty/netty/3.6.4.Final/netty-3.6.4.Final.jar</file>
-        </fileset>
-      </configuration>
-    </facet>
-  </component>
   <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8" inherit-compiler-output="false">
     <output url="file://$MODULE_DIR$/target/classes" />
     <output-test url="file://$MODULE_DIR$/target/test-classes" />
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/src/main/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/resources" type="java-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/java1" type="java-resource" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
-      <excludeFolder url="file://$MODULE_DIR$/testCases" />
     </content>
-    <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
+    <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Maven: commons-codec:commons-codec:1.9" level="project" />
     <orderEntry type="library" name="Maven: log4j:log4j:1.2.9" level="project" />
@@ -180,11 +162,13 @@
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.8.9" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.8.0" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-core:2.8.9" level="project" />
-    <orderEntry type="library" name="Maven: com.chanjet.csp:cia-client-thrift:2.0.9" level="project" />
-    <orderEntry type="library" name="Maven: commons-lang:commons-lang:2.6" level="project" />
-    <orderEntry type="library" name="Maven: commons-configuration:commons-configuration:1.8" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.thrift:libthrift:0.9.1" level="project" />
-    <orderEntry type="library" name="Maven: org.lazyluke:log4jdbc-remix:0.2.7" level="project" />
-    <orderEntry type="library" name="Maven: mail:mail:1.0" level="project" />
+    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy:2.1.6" level="project" />
+    <orderEntry type="library" name="Maven: antlr:antlr:2.7.7" level="project" />
+    <orderEntry type="library" name="Maven: org.ow2.asm:asm-tree:4.0" level="project" />
+    <orderEntry type="library" name="Maven: org.ow2.asm:asm-commons:4.0" level="project" />
+    <orderEntry type="library" name="Maven: org.ow2.asm:asm:4.0" level="project" />
+    <orderEntry type="library" name="Maven: org.ow2.asm:asm-util:4.0" level="project" />
+    <orderEntry type="library" name="Maven: org.ow2.asm:asm-analysis:4.0" level="project" />
+    <orderEntry type="library" name="Maven: org.codehaus.groovy:groovy-jsr223:2.1.6" level="project" />
   </component>
 </module>

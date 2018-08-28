@@ -1,5 +1,7 @@
 package com.chanjet.chanapp.qa.iFramework.Entity;
 
+import com.chanjet.chanapp.qa.iFramework.Entity.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,9 +16,9 @@ public class CommandXml {
 
     public List<InitMethod> recoverList = new ArrayList<InitMethod>();//环境恢复方法列表
 
-    public List<Userinfo> userList = new ArrayList<Userinfo>();//用户信息
+    public List<com.chanjet.chanapp.qa.iFramework.Entity.Userinfo> userList = new ArrayList<com.chanjet.chanapp.qa.iFramework.Entity.Userinfo>();//用户信息
 
-    public static HashMap<String, Userinfo> userlistHm = new HashMap<String, Userinfo>();// 依赖参数
+    public static HashMap<String, com.chanjet.chanapp.qa.iFramework.Entity.Userinfo> userlistHm = new HashMap<String, com.chanjet.chanapp.qa.iFramework.Entity.Userinfo>();// 依赖参数
 
     public static HashMap<String, String> relaPara = new HashMap<String, String>();//依赖参数
 
@@ -75,11 +77,11 @@ public class CommandXml {
         this.recoverList = recoverList;
     }
 
-    public List<Userinfo> getUserList() {
+    public List<com.chanjet.chanapp.qa.iFramework.Entity.Userinfo> getUserList() {
         return userList;
     }
 
-    public void setUserList(List<Userinfo> userList) {
+    public void setUserList(List<com.chanjet.chanapp.qa.iFramework.Entity.Userinfo> userList) {
         this.userList = userList;
     }
 

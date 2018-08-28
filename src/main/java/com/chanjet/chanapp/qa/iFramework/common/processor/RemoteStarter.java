@@ -1,27 +1,33 @@
 package com.chanjet.chanapp.qa.iFramework.common.processor;
 
+import com.alibaba.citrus.util.collection.ArrayHashMap;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.chanjet.chanapp.qa.iFramework.common.Util.DateUtil;
-import com.chanjet.chanapp.qa.iFramework.common.Util.StringUtils;
+import com.chanjet.chanapp.qa.iFramework.Entity.ErrorInfo;
+import com.chanjet.chanapp.qa.iFramework.Entity.Result;
 import com.chanjet.chanapp.qa.iFramework.Entity.RunStatus;
-import com.chanjet.chanapp.qa.iFramework.common.DAO.Base.IResultDao;
-import com.chanjet.chanapp.qa.iFramework.common.DAO.Base.ISummaryDao;
-import com.chanjet.chanapp.qa.iFramework.common.DAO.Base.IVersionDao;
-import com.chanjet.chanapp.qa.iFramework.common.DTO.ResultDto;
-import com.chanjet.chanapp.qa.iFramework.common.DTO.SummaryDto;
-import com.chanjet.chanapp.qa.iFramework.common.DTO.VersionDto;
+import com.chanjet.chanapp.qa.iFramework.Entity.TestCase;
+import com.chanjet.chanapp.qa.iFramework.common.DAO.Base.*;
+import com.chanjet.chanapp.qa.iFramework.common.DTO.*;
 import com.chanjet.chanapp.qa.iFramework.common.IDataManager;
 import com.chanjet.chanapp.qa.iFramework.common.IRemoteStarter;
 import com.chanjet.chanapp.qa.iFramework.common.IVerifier;
+import com.chanjet.chanapp.qa.iFramework.common.Util.DateUtil;
+import com.chanjet.chanapp.qa.iFramework.common.Util.ExceptionCodes;
+import com.chanjet.chanapp.qa.iFramework.common.Util.StringUtils;
+import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.TestCaseNode;
+import com.chanjet.chanapp.qa.iFramework.common.xml.XmlTcm;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Resource;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.util.Date;
-import java.util.List;
+import java.io.File;
+import java.util.*;
+
+import static com.chanjet.chanapp.qa.iFramework.common.processor.Driver.sysPro;
 
 /**
  * Created by haijia on 6/27/17.
@@ -41,15 +47,24 @@ public class RemoteStarter implements IRemoteStarter {
     @Resource
     private IResultDao IResultDaoImpl;
 
-    public Driver getDriver() {
+    @Resource
+    private IFlagsDao iFlagsDao;
+
+    @Resource
+    private INodeManagerDao iNodeManagerDao;
+
+    @Resource
+    private XmlTcm xmlTcm;
+
+    public com.chanjet.chanapp.qa.iFramework.common.processor.Driver getDriver() {
         return driver;
     }
 
-    public void setDriver(Driver driver) {
+    public void setDriver(com.chanjet.chanapp.qa.iFramework.common.processor.Driver driver) {
         this.driver = driver;
     }
 
-    Driver driver;
+    com.chanjet.chanapp.qa.iFramework.common.processor.Driver driver;
 
     public IVerifier getVerifier() {
         return verifier;
@@ -82,7 +97,8 @@ public class RemoteStarter implements IRemoteStarter {
             @QueryParam("dn") String dn,
             @QueryParam("pn") String productName,
             @QueryParam("dns") String dns,
-            @QueryParam("path") String path) {
+            @QueryParam("path") String path,
+            @QueryParam("user") String operator) {
 
         if(StringUtils.isEmptyOrSpace(path)){
             log.warn("Path is a must but you don't!!!");
@@ -94,7 +110,7 @@ public class RemoteStarter implements IRemoteStarter {
             return "pn(productName) is a must but you don't!!!";
         }
 
-        CommandEntity commandEntity = new CommandEntity();
+        com.chanjet.chanapp.qa.iFramework.common.processor.CommandEntity commandEntity = new com.chanjet.chanapp.qa.iFramework.common.processor.CommandEntity();
 
         if(!StringUtils.isEmptyOrSpace(dburl)){
             commandEntity.setDbURL(dburl);
@@ -113,15 +129,34 @@ public class RemoteStarter implements IRemoteStarter {
         }
 
         if(!StringUtils.isEmptyOrSpace(productName)){
-            commandEntity.setProductName(productName.toLowerCase());
+            JSONArray pn = new JSONArray();
+            pn.add(productName.toLowerCase());
+            commandEntity.setProductName(pn.toString().toLowerCase());
         }
 
         if(!StringUtils.isEmptyOrSpace(dns)){
             commandEntity.setDns(dns.toLowerCase());
         }
 
+        if(!StringUtils.isEmptyOrSpace(operator)){
+            commandEntity.setUser(operator.toLowerCase());
+        }
+
+        List<File> files = new ArrayList<File>();
         try{
-            return driver.Execute(path, verifier, dataManager, commandEntity);
+            //获取指定路径下全部文件及子文件夹下全部测试用例文，填充files对象
+            com.chanjet.chanapp.qa.iFramework.common.processor.Driver.getFileList(path, files);
+        } catch (Exception ex){
+            log.info(ex);
+            Result result = new Result();
+            result.setResult(false);
+            result.setDateTime(DateUtil.getCurrentTime());
+            result.setError(new ErrorInfo(ExceptionCodes.FileException, ex.getMessage(), "{}"));
+            return result.toString();
+        }
+
+        try{
+            return driver.Execute(files, verifier, dataManager, commandEntity);
         } catch (Exception ex){
             log.error(ex);
             if(null != ex.getMessage() && StringUtils.isNotEmpty(ex.getMessage())){
@@ -135,6 +170,7 @@ public class RemoteStarter implements IRemoteStarter {
     @GET
     @Path("isummary")
     public String getSummary(@QueryParam("pn") String productname, @QueryParam("date") @DefaultValue("2017-09-26 10:13") String rundate){
+
         if(StringUtils.isEmptyOrSpace(productname) && StringUtils.isEmptyOrSpace(rundate)){
              log.error("Need to set pn or date or both");
              return "Need to set pn or date or both";
@@ -176,12 +212,13 @@ public class RemoteStarter implements IRemoteStarter {
     @GET
     @Path("idict")
     public String getDirectoriesFiles(@QueryParam("pn") String productname) throws Exception{
+
         if(StringUtils.isEmptyOrSpace(productname)){
             return "pn is a must";
         }
 
         JSONObject result = new JSONObject();
-        Driver.getFileList(productname,result);
+        com.chanjet.chanapp.qa.iFramework.common.processor.Driver.getDictFileList(productname,result);
 
         return result.toJSONString();
     }
@@ -189,16 +226,18 @@ public class RemoteStarter implements IRemoteStarter {
     @GET
     @Path("ixml")
     public String showXml(@QueryParam("path") String path){
+
         if(StringUtils.isEmptyOrSpace(path)){
             return "path is a must";
         }
 
-        return Driver.getXmlFile(path);
+        return com.chanjet.chanapp.qa.iFramework.common.processor.Driver.getXmlFile(path);
     }
 
     @GET
     @Path("ilist")
     public String getHistoryReportList(@QueryParam("pn")String productname, @QueryParam("date")String date){
+
         JSONArray result = new JSONArray();
 
         if(StringUtils.isEmptyOrSpace(productname)){
@@ -238,6 +277,7 @@ public class RemoteStarter implements IRemoteStarter {
     @GET
     @Path("ireport")
     public String getReport(@QueryParam("id")String reportID){
+
         if(StringUtils.isEmptyOrSpace(reportID)){
             return "id is a must";
         }
@@ -259,13 +299,6 @@ public class RemoteStarter implements IRemoteStarter {
         return "Not Found report";
     }
 
-    /**
-     * @Auther: haijia
-     * @Description: 创建或编辑测试用例文件
-     * @param path
-     * @param content
-     * @Date: 12/4/17 16:20
-     */
     @POST
     @Path("ieditxml")
     public boolean editXml(@FormParam("path") String path, @FormParam("content") String content){
@@ -278,7 +311,332 @@ public class RemoteStarter implements IRemoteStarter {
             return false;
         }
 
-        return Driver.editXmlFile(path, content);
+        return com.chanjet.chanapp.qa.iFramework.common.processor.Driver.editXmlFile(path, content);
     }
 
+    @GET
+    @Path("iflag")
+    public String runFlagCases(@QueryParam("path")String path,
+                               @QueryParam("flag")String flags,
+                               @QueryParam("user") String user){
+        List<NodeManagerDto> runDtos = new ArrayList<NodeManagerDto>();
+
+        try {
+            if(StringUtils.isEmptyOrSpace(path)){
+                return "path is a must!";
+            }
+
+            if(StringUtils.isEmptyOrSpace(flags)){
+                return "flags is a must!";
+            }
+
+            String[] flagsArray = flags.split(",");
+
+            //从数据库里找到指定路径path下的全部用例的path和flags
+            List<NodeManagerDto> dtos = iNodeManagerDao.findNodeFlags(path);
+
+            if(null != dtos && 0 < dtos.size()) {
+                for (NodeManagerDto dto : dtos) {
+                    for(String flag : flagsArray) {
+                        if (dto.getFlags().contains((flag))) {
+                            runDtos.add(dto);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex){
+            log.error("get flag of cases from DB BUT encountering Exception: " + ex);
+            return ex.getMessage();
+        }
+
+        List<File> files = new ArrayList<File>();
+        JSONArray pn = new JSONArray();
+        try {
+            for (NodeManagerDto dto: runDtos) {
+                File directory = null;
+                String strPath = dto.getPath();
+                if((null == sysPro.getProperty("filelocation")) || StringUtils.isEmptyOrSpace(sysPro.getProperty("filelocation"))){
+                    directory = new File(strPath);
+
+                } else {
+                    if(!strPath.startsWith(sysPro.getProperty("filelocation") )) {
+                        directory = new File(sysPro.getProperty("filelocation") + strPath);
+                    } else{
+                        directory = new File(strPath);
+                    }
+                }
+
+                if(null == directory || StringUtils.isEmptyOrSpace(directory.getAbsolutePath())){
+                    return "path is not exist!";
+                }
+                strPath = directory.getAbsolutePath();
+                files.add(new File(strPath));
+                if(!StringUtils.isEmptyOrSpace(dto.getPn())){
+                    if(!pn.contains(dto.getPn().toLowerCase())){
+                        pn.add(dto.getPn().toLowerCase());
+                    }
+                }
+
+            }
+        }catch (Exception ex){
+            log.error("read files ecountering Exception: " + ex);
+            return ex.getMessage();
+        }
+
+        com.chanjet.chanapp.qa.iFramework.common.processor.CommandEntity commandEntity = new com.chanjet.chanapp.qa.iFramework.common.processor.CommandEntity();
+        if(!StringUtils.isEmptyOrSpace(user)){
+            commandEntity.setUser(user.toLowerCase());
+        }
+
+        if(0 < pn.size()){
+            commandEntity.setProductName(pn.toString());
+        } else{
+            pn.add("ignore");
+        }
+
+        try{
+            return driver.Execute(files, verifier, dataManager, commandEntity);
+        } catch (Exception ex){
+            log.error(ex);
+            if(null != ex.getMessage() && StringUtils.isNotEmpty(ex.getMessage())){
+                return ex.getMessage();
+            }
+            return ex.toString();
+        }
+    }
+
+    @GET
+    @Path("iset")
+    public String generateFlags(@QueryParam("path")String path, @QueryParam("pn")String pn){
+        if(StringUtils.isEmptyOrSpace(path)){
+            return "no generate since Path is null.";
+        }
+
+        List<File> files = new ArrayList<File>();
+        List<FlagsDto> allFlags = null;
+
+        try{
+            Driver.getFileList(path, files);
+
+            if(null == files || 0 == files.size()){
+                return "no generate since files is null.";
+            }
+
+            allFlags = iFlagsDao.findAll();
+            if(null == allFlags || 0 == allFlags.size()){
+                return "no generate since Flags table is null in DB.";
+            }
+
+        } catch (Exception ex){
+            log.info(ex);
+            return ex.getMessage();
+        }
+
+        HashMap<String, String> flagMap = new HashMap<>();
+        for(FlagsDto dto : allFlags){
+            flagMap.put(dto.getName(), String.valueOf(dto.getId()));
+        }
+
+        int update = 0;
+        int insert = 0;
+        int over = 0;
+
+        JSONObject resultJsonObject = new JSONObject();
+
+        for(File file : files) {
+            try {
+                TestCase testCase = xmlTcm.GetTestCase(file.getPath());
+                TestCaseNode node = (TestCaseNode) testCase;
+                if (StringUtils.isEmptyOrSpace(node.getFlags())) {
+                    continue;
+                } else {
+                    String[] flags = node.getFlags().split(",");
+                    if (null == flags || 0 == flags.length) {
+                        continue;
+                    }
+
+                    String ids = translateFlagToIDs(flagMap, flags);
+
+                    String subPath = initCasePath(file.getPath());
+                    List<NodeManagerDto> dtos = iNodeManagerDao.findNodeFlags(subPath);
+                    if (null == dtos || 0 == dtos.size()) {
+                        NodeManagerDto dto = new NodeManagerDto();
+                        dto.setName(node.getName());
+                        dto.setFlags(ids);
+                        dto.setPath(subPath);
+                        dto.setName(node.getName());
+                        dto.setNote(node.getStatus());
+                        dto.setPn(StringUtils.isEmptyOrSpace(pn) ? "" : pn.toLowerCase().trim());
+                        iNodeManagerDao.addNodeFlag(dto);
+                        insert++;
+                        log.warn(dto.getPath() + " has been insert flags:" + flags.toString());
+                    } else {
+                        if (1 == dtos.size()) {
+                            if (isUpdateNodeFlag(dtos.get(0), pn, ids)) {
+                                NodeManagerDto dto = new NodeManagerDto();
+                                dto.setId(dtos.get(0).getId());
+                                dto.setName(node.getName());
+                                dto.setFlags(ids);
+                                dto.setPath(initCasePath(file.getPath()));
+                                dto.setName(node.getName());
+                                dto.setNote(node.getStatus());
+                                dto.setPn(StringUtils.isEmptyOrSpace(pn) ? null : pn.toLowerCase().trim());
+                                iNodeManagerDao.updateNodeFlag(dto);
+                                update++;
+                                log.warn(subPath + " has been update flags");
+                            }
+                        } else {
+                            over++;
+                            log.warn("Over 1 same path test cases against: " + subPath + " !!!");
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                log.error("file encountering against the path: " + file.getPath());
+                log.error(ex);
+            }
+        }
+
+        resultJsonObject.put("INSERT", insert);
+        resultJsonObject.put("UPDATE", update);
+        resultJsonObject.put("OVER", over);
+
+        return resultJsonObject.toJSONString();
+    }
+
+    @GET
+    @Path("icount")
+    public String countFiles(@QueryParam("path")String path,
+                             @QueryParam("flag")String flags){
+
+        if(StringUtils.isEmptyOrSpace(path)){
+            return "path is a must!";
+        }
+
+        if(StringUtils.isEmptyOrSpace(flags)){
+            return "flags is a must!";
+        }
+
+        Map<String, Integer> count = new ArrayHashMap<>();
+
+        try{
+            List<NodeManagerDto> dtos = iNodeManagerDao.findNodeFlags(path);
+
+            String[] flagsArray = flags.split(",");
+
+            List<NodeManagerDto> matchedDtos = new ArrayList<NodeManagerDto>();
+
+            if(null != dtos && 0 < dtos.size()) {
+                for (NodeManagerDto dto : dtos) {
+                    for(String flag : flagsArray) {
+                        if (dto.getFlags().contains((flag))) {
+                            matchedDtos.add(dto);
+                        }
+                    }
+                }
+            }
+
+            int emptyPn = 0;
+            for(NodeManagerDto dto : matchedDtos){
+                if(!StringUtils.isEmptyOrSpace(dto.getPn())){
+                    if(null != count.get(dto.getPn())){
+                        count.put(dto.getPn(), count.get(dto.getPn()) + 1);
+                    } else{
+                        count.put(dto.getPn(), 0);
+                    }
+                } else{
+                    count.put("emptyPn", emptyPn++);
+                }
+            }
+
+        } catch (Exception ex){
+            log.error(ex);
+            return ex.getMessage();
+        }
+
+        return JSON.toJSONString(count);
+    }
+
+    @GET
+    @Path("imap")
+    public String flagMap(){
+
+        List<FlagsDto> allFlags = null;
+        JSONObject mapJson = new JSONObject();
+
+        try {
+            allFlags = iFlagsDao.findAll();
+            for(FlagsDto dto : allFlags){
+                mapJson.put(dto.getName().toLowerCase().trim(), dto.getId());
+            }
+        } catch (Exception ex){
+            log.error(ex);
+            return ex.getMessage();
+        }
+
+        return mapJson.toJSONString();
+    }
+
+    private boolean isUpdateNodeFlag(NodeManagerDto dto, String pn, String ids){
+        String[] dbFlags = dto.getFlags().split(",");
+        if(!compareStringArray(dbFlags, ids.split(","))){
+            return true;
+        }
+
+        if(StringUtils.isNotEmpty(pn) && null == dto.getPn()){
+            return true;
+        }
+
+        if (null != dto.getPn()
+                && StringUtils.isNotEmpty(pn)
+                && !dto.getPn().toLowerCase().equals(pn.toLowerCase().trim())){
+            return true;
+        }
+
+        return false;
+    }
+
+    private String translateFlagToIDs(HashMap<String, String> flagMap, String[] flags){
+        StringBuilder result = new StringBuilder();
+        for (String flag : flags){
+            if(null != flagMap.get(flag.toLowerCase().trim())){
+                result.append(flagMap.get(flag.toLowerCase().trim())).append(",");
+            }
+        }
+
+        if(result.toString().endsWith(",")){
+            return result.substring(0, result.toString().length() - 1);
+        }
+
+        return result.toString();
+    }
+
+    private boolean compareStringArray(String[] array1, String[] array2){
+        if(null == array1 || 0 == array1.length || null == array2 || 0 == array2.length){
+            return true;
+        }
+
+        if(array1.length != array2.length){
+            return false;
+        }
+
+        List<String> stringB = Arrays.asList(array2);
+        for (String s1 : array1){
+            if(!stringB.contains(s1)){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private String initCasePath(String path){
+        if(path.startsWith("testCases/")){
+            return path;
+        }
+
+        path = path.substring(path.indexOf("testCases/"), path.length());
+
+        return path;
+    }
 }

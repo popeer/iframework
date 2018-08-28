@@ -2,6 +2,8 @@ package com.chanjet.chanapp.qa.iFramework.common.xml;
 
 import com.chanjet.chanapp.qa.iFramework.Entity.TestCase;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.TestCaseNode;
+import com.chanjet.chanapp.qa.iFramework.common.xml.NodeInstance;
+import com.chanjet.chanapp.qa.iFramework.common.xml.Parser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dom4j.Document;

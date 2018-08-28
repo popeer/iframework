@@ -6,10 +6,13 @@ import com.chanjet.chanapp.qa.iFramework.common.DAO.Base.IResultDao;
 import com.chanjet.chanapp.qa.iFramework.common.DTO.ResultDto;
 import com.chanjet.chanapp.qa.iFramework.common.IDataManager;
 import com.chanjet.chanapp.qa.iFramework.common.processor.CommandEntity;
+import org.apache.commons.httpclient.util.DateUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Resource;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -41,14 +44,15 @@ public class DataManagerImpl implements IDataManager{
         ResultDto data = new ResultDto();
         try{
             data.setIs_passed(result.getResult());
-            data.setUser_id(result.getOperator());
-            data.setModule_id(result.getInterfaceName());
-            data.setNode_name(result.getNode_name());
-            data.setStep_name(result.getStep_name());
-            data.setRundatetime(result.getDateTime());
-            data.setEnvironment(result.getEnvironment());
+            data.setUser_id(StringUtils.isEmpty(result.getOperator()) ? "noUser" : result.getOperator());
+            data.setModule_id(StringUtils.isEmpty(result.getInterfaceName()) ? "noModuleId" : result.getInterfaceName());
+            data.setNode_name(StringUtils.isEmpty(result.getNode_name()) ? "noNodeName" : result.getNode_name());
+            data.setStep_name(StringUtils.isEmpty(result.getStep_name()) ? "noStepName" : result.getStep_name());
+            data.setRundatetime(StringUtils.isEmpty(result.getDateTime()) ? DateUtil.formatDate(new Date()) : result.getDateTime());
+            data.setEnvironment(StringUtils.isEmpty(result.getEnvironment()) ? "noEnvironment" : result.getEnvironment());
             data.setVersion_id(null == commandEntity.getVersionID()? 0 : commandEntity.getVersionID());
             data.setCase_info(result.getError().toString());
+            data.setModule_desc(result.getModule_desc());
             iResultDao.addResult(data);
             //因为必须返回json格式，而caseinfo是strin，所以重新赋值为ErrorInfo对象
             data.setCase_info(result.getError());

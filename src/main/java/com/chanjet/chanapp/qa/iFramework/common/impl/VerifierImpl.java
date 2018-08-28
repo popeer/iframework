@@ -7,6 +7,7 @@ import com.chanjet.chanapp.qa.iFramework.Entity.ErrorInfo;
 import com.chanjet.chanapp.qa.iFramework.Entity.Result;
 import com.chanjet.chanapp.qa.iFramework.common.IVerifier;
 import com.chanjet.chanapp.qa.iFramework.common.Util.*;
+import com.chanjet.chanapp.qa.iFramework.common.processor.CommandEntity;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.ResponseParameter;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step;
 import org.apache.logging.log4j.LogManager;
@@ -29,7 +30,7 @@ public class VerifierImpl implements IVerifier {
      * @param preExecutedResults 该步之前步骤的结果集合
      * @Date: 1/4/18 16:04
      */
-    public Result VerifyResult(Step result, List<ResponseParameter> responseParams, Map<String, String> entry, List<Object> preExecutedResults) throws Exception{
+    public Result VerifyResult(Step result, List<ResponseParameter> responseParams, Map<String, String> entry, List<Object> preExecutedResults, CommandEntity commandEntity) throws Exception{
         Result executeResult = new Result();
         JSONObject resultObject = new JSONObject();
         executeResult.setDateTime(DateUtil.format(new Date(), "yyyy-MM-dd HH:mm"));
@@ -56,9 +57,9 @@ public class VerifierImpl implements IVerifier {
 
         executeResult.setStep_name(result.getName());
         executeResult.setNode_name(result.getCaseNodeName());
-        // TODO: 1/4/18 设置执行人和该步方法
-        executeResult.setOperator("");
+        executeResult.setOperator(StringUtils.isNotEmpty(commandEntity.getUser()) ? commandEntity.getUser() : Constants.operator);
         executeResult.setModule("");
+        executeResult.setModule_desc(result.getDesc());
 
         if (null == result || null == result.getResult()) {
             // 判断是否期望访问为空值
@@ -86,35 +87,50 @@ public class VerifierImpl implements IVerifier {
                 executeResult.setStep_name(result.getName());
             }
 
+            if(result.getResult() instanceof Exception){
+                executeResult.setError(new ErrorInfo(ExceptionCodes.RunTimeException, String.valueOf(result.getResult()), ""));
+                executeResult.setResult(false);
+                return executeResult;
+            }
+
             //根据返回结果类型jsonObject/arrayList/string/map, 构造实际结果resultObject
             switch (result.getResult().getClass().getName()) {
                 case "com.alibaba.fastjson.JSONObject":
-                    resultObject = (com.alibaba.fastjson.JSONObject) (result.getResult());
+                    resultObject = (JSONObject) (result.getResult());
                     break;
                 case "java.util.ArrayList":
-                    ArrayList arrayList = (java.util.ArrayList) result.getResult();
-                    resultObject = (com.alibaba.fastjson.JSONObject) arrayList.get(0);
+                    ArrayList arrayList = (ArrayList) result.getResult();
+                    resultObject = (JSONObject) arrayList.get(0);
                     break;
                 case "java.lang.String":
                     String resultString = String.valueOf(result.getResult());
+
                     try {
-                        if (!StringUtils.isEmptyOrSpace(result.getType()) && "jar".equalsIgnoreCase(result.getType().trim())){
-                            resultObject.put("jar", resultString);
-                        } else{
-                            resultObject = JSONObject.parseObject(resultString);
+                        if (!StringUtils.isEmptyOrSpace(result.getType()) && "jar".equalsIgnoreCase(result.getType().trim())) {
+                            resultObject.put(Constants.jar, resultString);
+                        } else {
+                            if (JsonUtil.isJsonString(resultString)) {
+                                resultObject = JSONObject.parseObject(resultString);
+                            } else {
+                                resultObject.put(Constants.str, resultString);
+                            }
                         }
                     } catch (JSONException ex) {
-                        resultObject = JSONObject.parseObject("\"str\":\"" + resultString + "\"");
+//                        resultObject = JSONObject.parseObject("{\"str\":\"" + resultString + "\"}");
+                        resultObject.put(Constants.str, resultString);
                     } catch (Exception ex) {
                         executeResult.setError(new ErrorInfo(1006, "wrong result!", " return wrong detail: " + resultString));
                         executeResult.setResult(false);
                         return executeResult;
                     }
-
                     break;
                 case "java.util.LinkedHashMap":
-                    LinkedHashMap resultLinkMap = (java.util.LinkedHashMap)result.getResult();
+                    LinkedHashMap resultLinkMap = (LinkedHashMap) result.getResult();
                     resultObject = new JSONObject(resultLinkMap);
+                    break;
+                case "com.alibaba.fastjson.JSONArray":
+                    JSONArray jsonArray = (JSONArray) result.getResult();
+                    resultObject.put(Constants.jsonArray, jsonArray);
                     break;
                 default:
                     executeResult.setError(new ErrorInfo(1005, "Not support this class!", " not support this Class " + result.getResult().getClass().getName()));
@@ -162,14 +178,22 @@ public class VerifierImpl implements IVerifier {
                                 case "int":
                                     comparingObject = comparingJSONObject.get(sign[1]);
                                     break;
+                                case Constants.jsonArray:
+                                    Object jsonObject = comparingJSONObject.getJSONArray(Constants.jsonArray).get(Integer.parseInt(sign[1]));
+                                    comparingJSONObject = (JSONObject) jsonObject;
+                                    break;
+                                case Constants.jsonArrayString:
+                                    Object jsonString = comparingJSONObject.getJSONArray(Constants.jsonArray).get(Integer.parseInt(sign[1]));
+                                    comparingObject = String.valueOf(jsonString);
+                                    break;
                                 default:
                                     break;
                             }
                         } //如果是数组，允许指定获取数组内第几个元素
                         else if ((3 == sign.length) && (sign[0].toLowerCase().equals("array"))) {
                             Object jsonObject = comparingJSONObject.getJSONArray(sign[1]).get(Integer.parseInt(sign[2]));
-                            comparingJSONObject = (JSONObject)jsonObject;
-                        } else {
+                            comparingJSONObject = (JSONObject) jsonObject;
+                        }  else {
                             executeResult.setError(new ErrorInfo(1002, "Expected path number of _ sign is 2 or 3!", comparingJSONObject));
                             executeResult.setResult(false);
                         }
@@ -278,15 +302,12 @@ public class VerifierImpl implements IVerifier {
                                     } else {
                                         MyAssert.fail("actualObject NOT contain " + entity.getValue(), 1008);
                                     }
-
                                 }
-
                             }
                             break;
                         default:
                             break;
                     }
-
                 } else {
                     //log error
                     executeResult.setError(new ErrorInfo(1001, "No expected path!", "{}"));
@@ -294,8 +315,6 @@ public class VerifierImpl implements IVerifier {
                     return executeResult;
                 }
             }
-
-
         } catch (MyCustomerException ex){
             log.error("Verify occur a MyCustomerException!");
             executeResult.setResult(false);
@@ -304,7 +323,7 @@ public class VerifierImpl implements IVerifier {
         } catch (Exception ex){
             log.error("Verify occur an Exception!");
             executeResult.setResult(false);
-            executeResult.setError(new ErrorInfo(5000, ex.getMessage(), result.getResult()));
+            executeResult.setError(new ErrorInfo(5000, ex.getMessage(),result.getResult()));
             return executeResult;
         }
 

@@ -9,7 +9,7 @@ import java.util.List;
  * Created by bailin on 2016/11/30.
  */
 public interface IModuleMapper {
-    List<ModuleDto> findModule(@Param("name")String name);
+    List<ModuleDto> findModule(@Param("name") String name);
     void  updateModule(ModuleDto module);
     void addModule(ModuleDto module);
     void deleteModule(long id);

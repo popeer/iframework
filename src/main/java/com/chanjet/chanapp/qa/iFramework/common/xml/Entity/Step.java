@@ -2,6 +2,9 @@ package com.chanjet.chanapp.qa.iFramework.common.xml.Entity;
 
 import com.chanjet.chanapp.qa.iFramework.Entity.TestCase;
 import com.chanjet.chanapp.qa.iFramework.common.IExecutor;
+import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Request;
+import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Response;
+import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.ResponseParameter;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Parser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,6 +42,33 @@ public class Step extends TestCase {
     private String headerInit;
     private String voidReturn;
     private String sqlDriver;
+    private String groovyMethodName;
+    private String desc;
+    private String staticCls;
+
+    public String getStaticCls() {
+        return staticCls;
+    }
+
+    public void setStaticCls(String staticCls) {
+        this.staticCls = staticCls;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
+    }
+
+    public String getGroovyMethodName() {
+        return groovyMethodName;
+    }
+
+    public void setGroovyMethodName(String groovyMethodName) {
+        this.groovyMethodName = groovyMethodName;
+    }
 
     public String getSqlDriver() {
         return sqlDriver;

@@ -1,6 +1,7 @@
 package com.chanjet.chanapp.qa.iFramework.Entity;
 
 import com.alibaba.fastjson.JSONObject;
+import com.chanjet.chanapp.qa.iFramework.Entity.ErrorInfo;
 
 import java.io.Serializable;
 
@@ -28,8 +29,19 @@ public class Result implements Serializable{
 	String environment;
 	String dateTime;
 	String operator;
+	//接口路径
 	String module;
 	Object resultDetail;
+	//接口中文描述
+	String module_desc;
+
+	public String getModule_desc() {
+		return module_desc;
+	}
+
+	public void setModule_desc(String module_desc) {
+		this.module_desc = module_desc;
+	}
 
 	public Object getResultDetail() {
 		return resultDetail;

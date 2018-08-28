@@ -10,8 +10,10 @@ import com.chanjet.chanapp.qa.iFramework.common.xml.Parser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -27,74 +29,31 @@ public class JarExecuter implements IExecutor {
             return null;
         }
 
-        if(StringUtils.isEmptyOrSpace(step.getMethod()) || null == step.getParameterType()){
-            log.error("Step miss the Method or ParameterType in xml!");
-            return null;
-        }
-
-        String[] parameterTypes = step.getParameterType().split(",");
-        List<Class<?>> classes = new ArrayList<Class<?>>();
-        List<Object> values = new ArrayList<Object>();
-
-        for(String item : parameterTypes){
-            String[] items = item.split("___");
-            if(null == items || 2 != items.length){
-                log.error(item + " shoud NOT Null or length = 2!");
-                break;
-            }
-            String type = items[0];
-            String value = items[1];
-            switch (type.toLowerCase()){
-                case "string":
-                    classes.add(String.class);
-                    values.add((String) value);
-                    continue;
-                case "long":
-                    classes.add(Long.class);
-                    values.add(Integer.parseInt(value));
-                case "int":
-                    classes.add(int.class);
-                    values.add(Integer.parseInt(value));
-                    continue;
-                case "integer":
-                    classes.add(Integer.class);
-                    values.add(Integer.valueOf(value));
-                    continue;
-                case "bool":
-                    classes.add(Boolean.class);
-                    if(value.toLowerCase().equals("true")){
-                        values.add((Object)true);
-                    } else{
-                        values.add((Object)false);
-                    }
-                    continue;
-                case "object":
-                    classes.add(Object.class);
-                    values.add((Object)value);
-                    continue;
-                case "map":
-                    classes.add(Map.class);
-
-                    continue;
-                case "date":
-                    classes.add(Date.class);
-                    continue;
-                default:
-                    log.warn("Miss Class<?> " + type);
-                    break;
-            }
-        }
-
-        Class<?>[] classesArray = new Class<?>[parameterTypes.length];
-
-        classes.toArray(classesArray);
-
-        Object[] valuesArray = new Object[values.size()];
-        values.toArray(valuesArray);
+        Object[] paramArray = initMethodParams(step, preExecutedResults, parser, entry);
 
         Class<?> clsInstance = Class.forName(step.getClsName());
-        Constructor clsInstanceConstructor = clsInstance.getConstructor(classesArray);
+        Object result = null;
 
+        if(null != step.getStaticCls() && !StringUtils.isEmptyOrSpace(step.getStaticCls())){
+            //静态类调用
+            Method method = clsInstance.getMethod(step.getMethod(), new Class[]{Object.class});
+            result = method.invoke(null, paramArray).toString();
+        } else{
+            //非静态类调用
+            if(StringUtils.isEmptyOrSpace(step.getMethod()) || null == step.getParameterType()){
+                log.error("Step miss the Method or ParameterType in xml!");
+                return null;
+            }
+
+            result = initConstructorParams(clsInstance, step, paramArray);
+        }
+
+        log.info("result is: " + result);
+        return result;
+    }
+
+    private Object[] initMethodParams(Step step, List<Object> preExecutedResults, Parser parser, Map<String, String> entry)
+            throws IOException, MyCustomerException, ParseException, ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException {
         List<RequestParameter> requestParams = null;
 
         if(null == entry){
@@ -201,21 +160,95 @@ public class JarExecuter implements IExecutor {
             }
         }
 
-        //1. run interface
         Object[] paramArray = new Object[params.size()];
         params.toArray(paramArray);
+        return paramArray;
+    }
 
-        Method[] methods = clsInstance.getMethods();
+    private Object initConstructorParams(Class<?> clsInstance, Step step, Object[] paramArray) throws Exception{
+        String[] parameterTypes = step.getParameterType().split(",");
+        List<Class<?>> classes = new ArrayList<Class<?>>();
+        List<Object> values = new ArrayList<Object>();
 
-        Object result = null;
-        for(Method method : methods){
-            if(method.getName().equals(step.getMethod())){
-                result = method.invoke(clsInstanceConstructor.newInstance(valuesArray), paramArray);
+        for(String item : parameterTypes){
+            String[] items = item.split("___");
+            if(null == items || 2 != items.length){
+                log.error(item + " shoud NOT Null or length = 2!");
                 break;
+            }
+            String type = items[0];
+            String value = items[1];
+            switch (type.toLowerCase()){
+                case "string":
+                    classes.add(String.class);
+                    values.add((String) value);
+                    continue;
+                case "long":
+                    classes.add(Long.class);
+                    values.add(Integer.parseInt(value));
+                case "int":
+                    classes.add(int.class);
+                    values.add(Integer.parseInt(value));
+                    continue;
+                case "integer":
+                    classes.add(Integer.class);
+                    values.add(Integer.valueOf(value));
+                    continue;
+                case "bool":
+                    classes.add(Boolean.class);
+                    if(value.toLowerCase().equals("true")){
+                        values.add((Object)true);
+                    } else{
+                        values.add((Object)false);
+                    }
+                    continue;
+                case "object":
+                    classes.add(Object.class);
+                    values.add((Object)value);
+                    continue;
+                case "map":
+                    classes.add(Map.class);
+
+                    continue;
+                case "date":
+                    classes.add(Date.class);
+                    continue;
+                default:
+                    log.warn("Miss Class<?> " + type);
+                    break;
             }
         }
 
-        log.info("result is: " + result);
-        return result;
+        Class<?>[] classesArray = new Class<?>[parameterTypes.length];
+        classes.toArray(classesArray);
+
+        Object[] valuesArray = new Object[values.size()];
+        values.toArray(valuesArray);
+
+        Constructor clsInstanceConstructor = clsInstance.getConstructor(classesArray);
+        Method[] methods = clsInstance.getMethods();
+        for(Method method : methods){
+            if(method.getName().equals(step.getMethod())){
+                return method.invoke(clsInstanceConstructor.newInstance(valuesArray), paramArray);
+            }
+        }
+        return null;
     }
+
+    public void main(){
+        try {
+            String className = "com.chanjet.chanapp.qa.iFramework.common.Util.JsonUtil";//这里注意了，是：包名.类名，只写类名会出问题的哦
+            Class<?> testClass = Class.forName(className);
+
+            Method saddMethod2 = testClass.getMethod("isJsonString", new Class[]{Object.class});
+
+            String result = saddMethod2.invoke(null,new Object[]{"abc"}).toString();
+            System.out.println(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return;
+    }
+
+
 }

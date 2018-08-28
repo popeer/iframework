@@ -2,6 +2,8 @@ package com.chanjet.chanapp.qa.iFramework.common;
 
 import com.alibaba.fastjson.JSONArray;
 import com.chanjet.chanapp.qa.iFramework.Entity.RunStatus;
+import com.chanjet.chanapp.qa.iFramework.common.IDataManager;
+import com.chanjet.chanapp.qa.iFramework.common.IVerifier;
 import com.chanjet.chanapp.qa.iFramework.common.processor.CommandEntity;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Parser;
 

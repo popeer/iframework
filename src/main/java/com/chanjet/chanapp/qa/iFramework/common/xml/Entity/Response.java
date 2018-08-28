@@ -1,5 +1,7 @@
 package com.chanjet.chanapp.qa.iFramework.common.xml.Entity;
 
+import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.ResponseParameter;
+
 import java.util.ArrayList;
 import java.util.List;
 

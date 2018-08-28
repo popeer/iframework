@@ -1,6 +1,7 @@
 package com.chanjet.chanapp.qa.iFramework.Entity;
 
 import com.alibaba.fastjson.JSONArray;
+import com.chanjet.chanapp.qa.iFramework.Entity.RunStatus;
 import com.chanjet.chanapp.qa.iFramework.common.IDataManager;
 import com.chanjet.chanapp.qa.iFramework.common.ITestCase;
 import com.chanjet.chanapp.qa.iFramework.common.IVerifier;

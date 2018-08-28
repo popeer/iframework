@@ -26,7 +26,7 @@ public class GenerateListCaseFromBurp {
         TestCaseNode node = new TestCaseNode();
         List<Step> steps = new ArrayList<Step>();
 
-        File f = new File("/Users/haijia/Downloads/haijia1");
+        File f = new File("/Users/haijia/Downloads/GZQOnline");
 
 
         SAXReader reader = new SAXReader();
@@ -52,7 +52,6 @@ public class GenerateListCaseFromBurp {
                 Request request = parseRequest(unencryptedParameters);
                 subStep.setRequest(request);
                 steps.add(subStep);
-
             }
 
             generateNewTestCase(steps);
@@ -87,6 +86,7 @@ public class GenerateListCaseFromBurp {
         } else if(rawRequest.startsWith("GET")){
 
         }
+
         return request;
     }
 
@@ -117,8 +117,8 @@ public class GenerateListCaseFromBurp {
     }
 
     public static void generateNewTestCase(List<Step> steps){
-        String fileName = System.getProperty("user.dir") + "/testCases/Bizsvc/ActiveProduct.xml";
-
+//        String fileName = System.getProperty("user.dir") + "/testCases/Bizsvc/ActiveProduct.xml";
+        String fileName = "/opt/iframework/testCases/Bizsvc/ActiveProduct.xml";
         try{
             SAXReader reader = new SAXReader();
             Document doc = reader.read(fileName);
@@ -140,7 +140,8 @@ public class GenerateListCaseFromBurp {
             }
 
             Random r = new Random();
-            FileWriter fileWriter = new FileWriter(System.getProperty("user.dir") + "/testCases/TPlus/coverCIA" + r.nextInt(100) + ".xml");
+//            FileWriter fileWriter = new FileWriter(System.getProperty("user.dir") + "/testCases/TPlus/coverCIA" + r.nextInt(100) + ".xml");
+            FileWriter fileWriter = new FileWriter( "/opt/iframework/testCases/GZQ/gzq" + r.nextInt(100) + ".xml");
             OutputFormat format = OutputFormat.createPrettyPrint();
 
             XMLWriter writer = new XMLWriter(System.out, format);

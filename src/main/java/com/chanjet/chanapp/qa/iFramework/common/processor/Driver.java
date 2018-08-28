@@ -13,10 +13,8 @@ import com.chanjet.chanapp.qa.iFramework.common.DTO.VersionDto;
 import com.chanjet.chanapp.qa.iFramework.common.IDataManager;
 import com.chanjet.chanapp.qa.iFramework.common.IDriver;
 import com.chanjet.chanapp.qa.iFramework.common.IVerifier;
-import com.chanjet.chanapp.qa.iFramework.common.Util.DateUtil;
-import com.chanjet.chanapp.qa.iFramework.common.Util.ExceptionCodes;
-import com.chanjet.chanapp.qa.iFramework.common.Util.MyCustomerException;
-import com.chanjet.chanapp.qa.iFramework.common.Util.StringUtils;
+import com.chanjet.chanapp.qa.iFramework.common.Util.*;
+import com.chanjet.chanapp.qa.iFramework.common.processor.CommandEntity;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Config;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.TestCaseNode;
 import com.chanjet.chanapp.qa.iFramework.common.xml.XmlTcm;
@@ -52,25 +50,11 @@ public class Driver implements IDriver {
     }
 
     @Override
-    public String Execute(String path, IVerifier verifier, IDataManager dataManager, CommandEntity commandEntity) {
-        List<File> files = new ArrayList<File>();
-
-        try{
-            VersionDto versionDto = new VersionDto();
-            versionDto.setPn(commandEntity.getProductName());
-            iVersionDao.addVersionPn(versionDto);
-            commandEntity.setVersionID(Integer.valueOf(versionDto.getId()));
-
-            //获取指定路径下全部文件及子文件夹下全部测试用例文，填充files对象
-            getFileList(path, files);
-        } catch (Exception ex){
-            log.info(ex);
-            Result result = new Result();
-            result.setResult(false);
-            result.setDateTime(DateUtil.getCurrentTime());
-            result.setError(new ErrorInfo(ExceptionCodes.FileException, ex.getMessage(), "{}"));
-            return result.toString();
-        }
+    public String Execute(List<File> files, IVerifier verifier, IDataManager dataManager, CommandEntity commandEntity) {
+        VersionDto versionDto = new VersionDto();
+        versionDto.setPn(commandEntity.getProductName());
+        iVersionDao.addVersionPn(versionDto);
+        commandEntity.setVersionID(Integer.valueOf(versionDto.getId()));
 
         RunStatus runStatus = new RunStatus(0,0,0,0);
         JSONObject resultJsonObject = new JSONObject();
@@ -103,11 +87,20 @@ public class Driver implements IDriver {
         resultJsonObject.put("Failed", runStatus.Failed);
         resultJsonObject.put("Skipped", runStatus.Skipped);
 
+        resultJsonObject.put("pn", commandEntity.getProductName());
+        resultJsonObject.put("operator", StringUtils.isNotEmpty(commandEntity.getUser()) ? commandEntity.getUser() : "nouser");
+        resultJsonObject.put("versionID", commandEntity.getVersionID());
+
         String date = DateUtil.getCurrentTime();
 
         iSummaryDao.addSummary(new SummaryDto(runStatus.Passed, runStatus.Failed, runStatus.Skipped, date, commandEntity.getProductName()));
 
-        return resultJsonObject.toJSONString().replace("\\\\", "");
+        String result = resultJsonObject.toJSONString().replace("\\\\", "");
+
+        //报警
+//        AlarmUtil.alerm2(result, commandEntity.getProductName());
+
+        return result;
     }
 
     private Result initExceptionResult(JSONArray resultArray, Exception ex) {
@@ -143,7 +136,9 @@ public class Driver implements IDriver {
     public static List<File> getFileList(String strPath, List<File> filelist) throws Exception{
         File directory;
         log.info(strPath);
-        if((null == sysPro.getProperty("filelocation")) || StringUtils.isEmptyOrSpace(sysPro.getProperty("filelocation"))){
+        if((null == sysPro.getProperty("filelocation"))
+                || StringUtils.isEmptyOrSpace(sysPro.getProperty("filelocation"))
+                || strPath.startsWith(sysPro.getProperty("filelocation"))){
 //            xmlsource  = ClassLoader.getSystemResourceAsStream(path);
             directory = new File(strPath);
 
@@ -187,11 +182,13 @@ public class Driver implements IDriver {
     public static JSONObject getFileList(String strPath, JSONObject resultJsonObject) throws Exception{
         File directory = null;
         log.info(strPath);
-        if((null == sysPro.getProperty("filelocation")) || StringUtils.isEmptyOrSpace(sysPro.getProperty("filelocation"))){
+        if((null == sysPro.getProperty("filelocation"))
+                || StringUtils.isEmptyOrSpace(sysPro.getProperty("filelocation"))
+                || strPath.startsWith(sysPro.getProperty("filelocation"))){
             directory = new File(strPath);
 
         } else {
-            if(!strPath.startsWith(sysPro.getProperty("filelocation") )) {
+            if(!strPath.startsWith(sysPro.getProperty("filelocation"))) {
                 directory = new File(sysPro.getProperty("filelocation") + strPath);
             } else{
                 directory = new File(strPath);
@@ -221,6 +218,71 @@ public class Driver implements IDriver {
 
                     // 获取文件绝对路径
                     getFileList(files[i].getAbsolutePath(), resultJsonObject);
+                } // 判断文件名是否以.xml结尾
+                else if (fileName.endsWith("xml")) {
+                    if(resultJsonObject.containsKey("file")){
+                        resultJsonObject.put("file", resultJsonObject.getString("file") + ";" + fileName);
+                    } else{
+                        resultJsonObject.put("file", fileName);
+                    }
+                } else {
+                    continue;
+                }
+            }
+
+        } else{
+            if(dir.exists()){
+                if(resultJsonObject.containsKey("directory")){
+                    resultJsonObject.put("directory", resultJsonObject.getString("directory") + ";" + dir);
+                } else{
+                    resultJsonObject.put("directory", dir);
+                }
+            }
+        }
+
+        log.debug(resultJsonObject.toJSONString());
+        return resultJsonObject;
+    }
+
+    public static JSONObject getDictFileList(String strPath, JSONObject resultJsonObject) throws Exception{
+        File directory = null;
+        log.info(strPath);
+        if((null == sysPro.getProperty("filelocation"))
+                || StringUtils.isEmptyOrSpace(sysPro.getProperty("filelocation"))
+                || strPath.startsWith(sysPro.getProperty("filelocation"))){
+            directory = new File(strPath);
+
+        } else {
+            if(!strPath.startsWith(sysPro.getProperty("filelocation"))) {
+                directory = new File(sysPro.getProperty("filelocation") + strPath);
+            } else{
+                directory = new File(strPath);
+            }
+        }
+
+        if(null == directory || StringUtils.isEmptyOrSpace(directory.getAbsolutePath())){
+            return null;
+        }
+        strPath = directory.getAbsolutePath();
+
+        File dir = new File(strPath);
+
+        // 该文件目录下文件全部放入数组
+        File[] files = dir.listFiles();
+
+        if (files != null) {
+            for (int i = 0; i < files.length; i++) {
+                String fileName = files[i].getName();
+                // 判断是文件还是文件夹
+                if (files[i].isDirectory()) {
+                    if(resultJsonObject.containsKey("directory")){
+                        resultJsonObject.put("directory", resultJsonObject.getString("directory") + ";" + fileName);
+                    } else{
+                        resultJsonObject.put("directory", fileName);
+                    }
+
+//                     不循环获取子文件夹文件
+//                    getFileList(files[i].getAbsolutePath(), resultJsonObject);
                 } // 判断文件名是否以.xml结尾
                 else if (fileName.endsWith("xml")) {
                     if(resultJsonObject.containsKey("file")){

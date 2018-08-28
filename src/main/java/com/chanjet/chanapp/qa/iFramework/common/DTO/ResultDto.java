@@ -18,6 +18,15 @@ public class ResultDto implements Serializable {
     String step_name;
     String environment;
     String rundatetime;
+    String module_desc;
+
+    public String getModule_desc() {
+        return module_desc;
+    }
+
+    public void setModule_desc(String module_desc) {
+        this.module_desc = module_desc;
+    }
 
     public String getRundatetime() {
         return rundatetime;

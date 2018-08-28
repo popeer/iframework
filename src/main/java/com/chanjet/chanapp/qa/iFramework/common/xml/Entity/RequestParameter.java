@@ -26,6 +26,24 @@ public class RequestParameter {
     private String param_keyword_keyPath;
     private String jarparam_keyvalue;
     private String customerClass;
+    private String bodyData;
+    private String regex;
+
+    public String getRegex() {
+        return regex;
+    }
+
+    public void setRegex(String regex) {
+        this.regex = regex;
+    }
+
+    public String getBodyData() {
+        return bodyData;
+    }
+
+    public void setBodyData(String bodyData) {
+        this.bodyData = bodyData;
+    }
 
     public String getCustomerClass() {
         return customerClass;

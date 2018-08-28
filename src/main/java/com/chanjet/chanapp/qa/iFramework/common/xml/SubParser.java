@@ -1,5 +1,6 @@
 package com.chanjet.chanapp.qa.iFramework.common.xml;
 
+import com.chanjet.chanapp.qa.iFramework.common.xml.*;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Request;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.RequestParameter;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step;
@@ -12,7 +13,7 @@ import java.util.Map;
 /**
  * Created by haijia on 6/23/17.
  */
-public class SubParser extends Parser {
+public class SubParser extends com.chanjet.chanapp.qa.iFramework.common.xml.Parser {
 
     private Object getParameter(String value) throws Exception{
             switch (value.toLowerCase()){

@@ -51,6 +51,10 @@
         <dubbo:method name="getHistoryReportList" />
         <dubbo:method name="getReport" />
         <dubbo:method name="editXml" />
+        <dubbo:method name="generateFlags" />
+        <dubbo:method name="runFlagCases" />
+        <dubbo:method name="countFiles" />
+        <dubbo:method name="flagMap" />
     </dubbo:service>
 
     <bean id="httpExcutor"

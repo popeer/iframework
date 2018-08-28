@@ -12,6 +12,7 @@ import com.chanjet.chanapp.qa.iFramework.common.Util.*;
 import com.chanjet.chanapp.qa.iFramework.common.impl.HttpExcutor;
 import com.chanjet.chanapp.qa.iFramework.common.impl.JarExecuter;
 import com.chanjet.chanapp.qa.iFramework.common.processor.CommandEntity;
+import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.*;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Parser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,10 +29,19 @@ public class TestCaseNode extends TestCase{
     private String name;
     private String id;
     private String dataPathName;
-    private List<Step> testSteps = new ArrayList<Step>();
+    private List<com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step> testSteps = new ArrayList<com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step>();
     private Parser parser;
     private String status;
     private String duration;
+    private String flags;
+
+    public String getFlags() {
+        return flags;
+    }
+
+    public void setFlags(String flags) {
+        this.flags = flags;
+    }
 
     public String getDuration() {
         return duration;
@@ -51,11 +61,11 @@ public class TestCaseNode extends TestCase{
 
     public List<Map<String, String>> excelData;
 
-    public List<Step> getTestSteps() {
+    public List<com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step> getTestSteps() {
         return testSteps;
     }
 
-    public void setTestSteps(List<Step> testSteps) {
+    public void setTestSteps(List<com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step> testSteps) {
         this.testSteps = testSteps;
     }
 
@@ -83,7 +93,7 @@ public class TestCaseNode extends TestCase{
         this.dataPathName = dataPathName;
     }
 
-    public void addTestSteps(Step testStep){
+    public void addTestSteps(com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step testStep){
         testSteps.add(testStep);
     }
 
@@ -181,9 +191,12 @@ public class TestCaseNode extends TestCase{
             log.info("duration sleep end!");
         }
 
-        Step recordStep = new Step();
+        com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step recordStep = new com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step();
+        Object executeResult = null;
+
         try{
-            for(Step step : this.getTestSteps()){
+            for(com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step step : this.getTestSteps()){
+                executeResult = null;
                 recordStep = step;
                 Result result = new Result();
                 // 设置数据库连接方式，并获取全部sql，放入commmandEntity的sqlList
@@ -223,16 +236,18 @@ public class TestCaseNode extends TestCase{
                             step.setUrl(commandEntity.getDomainName() + step.getUrl());
                         }
                     }
+
                     step.setExecutor(new HttpExcutor());
                 }
 
                 //1. run interface
-                Object executeResult = step.Run(preExecutedResults, parser, entry);
+                executeResult = step.Run(preExecutedResults, parser, entry);
                 preExecutedResults.add(executeResult);
 
                 //2. to verify
                 step.setCaseNodeName(this.getName());
-                Result verifiedResult = verifier.VerifyResult(step, step.getExpectResponseValues(), entry, preExecutedResults);
+
+                Result verifiedResult = verifier.VerifyResult(step, step.getExpectResponseValues(), entry, preExecutedResults, commandEntity);
 
                 //3. to store all info into DB
                 ResultDto resultDto = dataManager.storeExecuteResult(verifiedResult, commandEntity);
@@ -260,14 +275,14 @@ public class TestCaseNode extends TestCase{
 
             return resultJsonArray;
         } catch (MyCustomerException ex){
-            return processException(resultJsonArray, recordStep, ex);
+            return processException(resultJsonArray, recordStep, ex, executeResult, runStatus);
         } catch(Exception ex){
-            return processException(resultJsonArray, recordStep, ex);
+            return processException(resultJsonArray, recordStep, ex, executeResult, runStatus);
         }
 
     }
 
-    private JSONArray processException(JSONArray resultSB, Step recordStep, Exception ex) throws MyCustomerException {
+    private JSONArray processException(JSONArray resultArray, com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step recordStep, Exception ex, Object executeResult, RunStatus runStatus) throws MyCustomerException {
         Result verifiedResult = new Result();
         verifiedResult.setNode_name(recordStep.getCaseNodeName());
         verifiedResult.setStep_name(recordStep.getName());
@@ -283,16 +298,14 @@ public class TestCaseNode extends TestCase{
             errorResult.append(traceElement.toString());
         }
 
-        verifiedResult.setError(new ErrorInfo(ExceptionCodes.RunTimeException, errorResult.toString(), errorResult));
+        verifiedResult.setError(new ErrorInfo(ExceptionCodes.RunTimeException, errorResult.toString(), executeResult));
         verifiedResult.setDateTime(DateUtil.getCurrentTime());
         verifiedResult.setResult(false);
 
-        resultSB.add(verifiedResult);
-//        resultSB.append("\r\n");
-//        resultSB.append("{" + verifiedResult.toString() + "}");
+        resultArray.add(verifiedResult);
 
-        log.error("Exception Stack Trace:" + resultSB.toString());
-        throw new MyCustomerException(resultSB.toString());
+        runStatus.Failed = runStatus.Failed + 1;
+        return resultArray;
     }
 
     public static Properties sysPro;

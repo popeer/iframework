@@ -6,6 +6,16 @@ import java.util.LinkedList;
  * Created by haijia on 6/21/17.
  */
 public class CommandEntity {
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public String user;
+
     public String getSqlDriver() {
         return sqlDriver;
     }

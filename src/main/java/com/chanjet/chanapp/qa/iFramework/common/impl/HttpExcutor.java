@@ -1,6 +1,7 @@
 package com.chanjet.chanapp.qa.iFramework.common.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.chanjet.chanapp.qa.iFramework.common.Util.GroovyUtil;
 import com.chanjet.chanapp.qa.iFramework.common.Util.StringUtils;
 import com.chanjet.chanapp.qa.iFramework.common.IExecutor;
 import com.chanjet.chanapp.qa.iFramework.common.Util.HttpHelper;
@@ -10,10 +11,7 @@ import org.apache.commons.httpclient.Cookie;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by houhja on 11/25/16.
@@ -47,7 +45,7 @@ public class HttpExcutor implements IExecutor {
     public HttpExcutor(String url, Map<String, String> params){
         this.url = url;
         this.requestParams = params;
-        log.debug(url);
+        log.info(url);
         for(Map.Entry<String,String> entity : params.entrySet()){
             log.debug("key:" + entity.getKey());
             log.debug("value:" + entity.getValue());
@@ -60,7 +58,7 @@ public class HttpExcutor implements IExecutor {
 
     public Object RunHttpPost() throws Exception{
 
-        JSONObject result;
+        Object result;
 
         try{
             result = HttpHelper.doPost(url, requestParams);
@@ -96,19 +94,19 @@ public class HttpExcutor implements IExecutor {
         return results;
     }
 
-    public Object RunHttpGetGetCookie() throws Exception{
-        String result;
+    public List<Object> RunHttpGetGetCookie() throws Exception{
+        List<Object> results = new ArrayList<Object>();
 
         try{
-            result = HttpHelper.doGet(url, requestParams);
+            results = HttpHelper.doGetCookie(url, requestParams);
         } catch (Exception ex){
             return null;
         }
-        return result;
+        return results;
     }
 
     public Object RunHttpPostSetCookie(Cookie[] cookie) throws Exception{
-        JSONObject result;
+        Object result;
 
         try{
             result = HttpHelper.doPostSetCookie(url, requestParams, cookie);
@@ -132,7 +130,7 @@ public class HttpExcutor implements IExecutor {
     }
 
     public Object RunHttpPostSetHeader(Map<String, String> headerMaps) throws Exception{
-        JSONObject result;
+        Object result;
 
         try{
             result = HttpHelper.doPostSetHeader(url, requestParams, headerMaps);
@@ -145,7 +143,7 @@ public class HttpExcutor implements IExecutor {
     }
 
     public Object RunHttpGetSetHeader(Map<String, String> headerMaps) throws Exception{
-        JSONObject result;
+        Object result;
 
         try{
             result = HttpHelper.doGetSetHeader(url, requestParams, headerMaps);
@@ -158,7 +156,7 @@ public class HttpExcutor implements IExecutor {
     }
 
     public Object RunHttpPostSingleKey(Map<String, String> headerMaps) throws Exception{
-        JSONObject result;
+        Object result;
 
         try{
             result = HttpHelper.doPostSingleKey(url, requestParams, headerMaps);
@@ -171,7 +169,7 @@ public class HttpExcutor implements IExecutor {
     }
 
     public Object RunHttpGetSingleKey(Map<String, String> headerMaps) throws Exception{
-        JSONObject result;
+        Object result;
 
         try{
             result = HttpHelper.doGetSingleKey(url, requestParams, headerMaps);
@@ -184,10 +182,75 @@ public class HttpExcutor implements IExecutor {
     }
 
     public Object RunHttpPostSetHeaderCookie(Map<String, String> headerMaps, Cookie[] cookie) throws Exception{
-        JSONObject result;
+        Object result;
 
         try{
             result = HttpHelper.doPostSetHeaderCookie(url, requestParams, headerMaps, cookie);
+        } catch (Exception ex){
+            log.error(ex.getMessage());
+            return null;
+        }
+
+        return result;
+    }
+
+    public Object RunHttpGetSetHeaderCookie(Map<String, String> headerMaps, Cookie[] cookie) throws Exception{
+        Object result;
+
+        try{
+            result = HttpHelper.doGetSetHeaderCookie(url, requestParams, headerMaps, cookie);
+        } catch (Exception ex){
+            log.error(ex.getMessage());
+            return null;
+        }
+
+        return result;
+    }
+
+    public Object RunDelete(Map<String, String> headerMaps) throws Exception{
+        Object result;
+
+        try{
+            result = HttpHelper.DELETE(url, requestParams, headerMaps);
+        } catch (Exception ex){
+            log.error(ex.getMessage());
+            return null;
+        }
+
+        return result;
+    }
+
+    public Object RunPUT(Map<String, String> headerMaps) throws Exception{
+        Object result;
+
+        try{
+            result = HttpHelper.PUT(url, requestParams, headerMaps);
+        } catch (Exception ex){
+            log.error(ex.getMessage());
+            return null;
+        }
+
+        return result;
+    }
+
+    public Object RunHttpPostJSON() throws Exception{
+        Object result;
+
+        try{
+            result = HttpHelper.doPostJson(url, requestParams);
+        } catch (Exception ex){
+            log.error(ex.getMessage());
+            return null;
+        }
+
+        return result;
+    }
+
+    public Object RunHttpPostJSONHeader(Map<String, String> headerMaps) throws Exception{
+        Object result;
+
+        try{
+            result = HttpHelper.doPostJsonHeader(url, requestParams,headerMaps);
         } catch (Exception ex){
             log.error(ex.getMessage());
             return null;
@@ -273,10 +336,29 @@ public class HttpExcutor implements IExecutor {
                 if(StringUtils.isEmptyOrSpace(step.getRule()) || (step.getRule().equals("post"))){
                     return RunHttpPostSetHeaderCookie(getHeaderMaps(step, preExecutedResults), getCookie(sequence, preExecutedResults));
                 } else if (step.getRule().equals("get")){
+                    return RunHttpGetSetHeaderCookie(getHeaderMaps(step, preExecutedResults), getCookie(sequence, preExecutedResults));
+                }
+                break;
+            case "dopostjson":
+                if(StringUtils.isEmptyOrSpace(step.getRule()) || (step.getRule().equals("post"))){
+                    return RunHttpPostJSON();
+                } else if (step.getRule().equals("get")){
                     //return executor.RunHttpGetSetHeader(getHeaderMaps());
                     log.info(("Attendtion : get http do not support set header"));
                 }
                 break;
+            case "dopostjsonheader":
+                if(StringUtils.isEmptyOrSpace(step.getRule()) || (step.getRule().equals("post"))){
+                    return RunHttpPostJSONHeader(getHeaderMaps(step, preExecutedResults));
+                } else if (step.getRule().equals("get")){
+                    //return executor.RunHttpGetSetHeader(getHeaderMaps());
+                    log.info(("Attendtion : get http do not support set header"));
+                }
+                break;
+            case "delete":
+                return RunDelete(getHeaderMaps(step, preExecutedResults));
+            case "put":
+                return RunPUT(getHeaderMaps(step, preExecutedResults));
             default:
                 if(StringUtils.isEmptyOrSpace(step.getRule()) || (step.getRule().equals("post"))){
                     return RunHttpPost();
@@ -291,15 +373,60 @@ public class HttpExcutor implements IExecutor {
 
     }
 
+
+    private Object getGroovyResult(String path, String[] args, String method){
+        if(StringUtils.isEmptyOrSpace(method)){
+            return null;
+        }
+
+        GroovyUtil groovyUtil = new GroovyUtil();
+        return groovyUtil.loadCustomGroovyScript(path, args, method);
+    }
+
     private Map<String, String> getHeaderMaps(Step step, List<Object> preExecutedResults){
         Map<String, String> map = new HashMap<String, String>();
 
         if(!StringUtils.isEmptyOrSpace(step.getHeaderInit())){
-            String[] items = step.getHeaderInit().split("___");
-            if(3 == items.length){
-                String sequence = items[0];
-                String type = items[1];
-                String key = items[2];
+            String[] headerInits = step.getHeaderInit().split("___");
+
+            if(2 == headerInits.length && org.apache.commons.lang3.StringUtils.isNotBlank(step.getParameterType())){
+                String key = headerInits[0];
+                String path = headerInits[1];
+                Object result = getGroovyResult(path, step.getParameterType().split(","), step.getGroovyMethodName());
+                if(null != result){
+                    if(org.apache.commons.lang3.StringUtils.isNotBlank(step.getHeaders())){
+                        switch (result.getClass().getName()){
+                            case "java.util.Map":
+                                Map<String, String> mapheader = (Map<String, String>)result;
+                                for (Map.Entry<String, String> entry : mapheader.entrySet()){
+                                    step.setHeaders(step.getHeaders() + ";" + entry.getKey() + ":" + entry.getValue());
+                                }
+                                break;
+                            default:
+                                step.setHeaders(step.getHeaders() + ";" + key + ":" + result);
+                                break;
+                        }
+                    } else{
+                        switch (result.getClass().getName()){
+                            case "java.util.Map":
+                                Map<String, String> mapheader = (Map<String, String>)result;
+                                for (Map.Entry<String, String> entry : mapheader.entrySet()){
+                                    step.setHeaders(entry.getKey() + ":" + entry.getValue());
+                                }
+                                break;
+                            default:
+                                step.setHeaders(key + ":" + result);
+                                break;
+                        }
+                    }
+                }
+            }
+
+
+            if(3 <= headerInits.length){
+                String sequence = headerInits[0];
+                String type = headerInits[1];
+                String key = headerInits[2];
                 String result = "";
                 switch (type.toLowerCase()){
                     case "string":
@@ -308,16 +435,81 @@ public class HttpExcutor implements IExecutor {
                     case "int":
                         result =  (String)preExecutedResults.get(Integer.parseInt(sequence));
                         break;
+                    case "json":
+                        result =  (String)preExecutedResults.get(Integer.parseInt(sequence));
+                        JSONObject resultJson = JSONObject.parseObject(result);
+                        if(4 == headerInits.length){
+                            result = resultJson.getString(headerInits[3]);
+                        }else{
+                            result = resultJson.getString(key);
+                        }
+                        break;
+                    case "jsonobject":
+                        JSONObject jsonObject = (JSONObject)preExecutedResults.get(Integer.parseInt(sequence));
+                        result = jsonObject.get(headerInits[3]).toString();
+                        break;
                     default:
                             break;
                 }
 
-                if(StringUtils.isEmptyOrSpace(step.getHeaders())){
-                    step.setHeaders(key + ":" + result);
-                } else{
-                    step.setHeaders(step.getHeaders() + ";" + key + ":" + result);
+                //把之前步骤里的结果作为header的参数传进来
+                List<String> args = new ArrayList<>();
+                String[] params = null;
+                if(StringUtils.isNotEmpty(step.getParameterType())){
+                    params = step.getParameterType().split(",");
+                    if(null != params && 0 < params.length){
+                        for(String param : params){
+                            args.add(param);
+                        }
+                    }
                 }
 
+                args.add(result);
+
+                if(5 == headerInits.length){
+                    Object groovyResult = getGroovyResult(headerInits[4], args.toArray(new String[0]), step.getGroovyMethodName());
+                    if(null != groovyResult){
+                        if(org.apache.commons.lang3.StringUtils.isNotBlank(step.getHeaders())){
+                            switch (groovyResult.getClass().getName()){
+                                case "java.util.HashMap":
+                                    Map<String, String> mapheader = (Map<String, String>)groovyResult;
+                                    for (Map.Entry<String, String> entry : mapheader.entrySet()){
+                                        step.setHeaders(step.getHeaders() + ";" + entry.getKey() + ":" + entry.getValue());
+                                    }
+                                    break;
+                                default:
+                                    step.setHeaders(step.getHeaders() + ";" + key + ":" + result);
+                                    break;
+                            }
+                        } else{
+                            switch (groovyResult.getClass().getName()){
+                                case "java.util.HashMap":
+                                    Map<String, String> mapheader = (Map<String, String>)groovyResult;
+                                    StringBuilder header = new StringBuilder();
+                                    for (Map.Entry<String, String> entry : mapheader.entrySet()){
+                                        header.append(entry.getKey() + ":" + entry.getValue() + ";");
+                                    }
+                                    step.setHeaders(header.toString());
+                                    break;
+                                default:
+                                    step.setHeaders(key + ":" + result);
+                                    break;
+                            }
+                        }
+                    } else{
+                        if(StringUtils.isEmptyOrSpace(step.getHeaders())){
+                            step.setHeaders(key + ":" + result);
+                        } else{
+                            step.setHeaders(step.getHeaders() + ";" + key + ":" + result);
+                        }
+                    }
+                } else {
+                    if (StringUtils.isEmptyOrSpace(step.getHeaders())) {
+                        step.setHeaders(key + ":" + result);
+                    } else {
+                        step.setHeaders(step.getHeaders() + ";" + key + ":" + result);
+                    }
+                }
             }
         }
 
@@ -325,7 +517,7 @@ public class HttpExcutor implements IExecutor {
             String[] headers = step.getHeaders().split(";");
 
             for(String header : headers){
-                String[] keyValue = header.split(":");
+                String[] keyValue = header.split(":", 2);
                 map.put(keyValue[0].trim(), keyValue[1].trim());
             }
         }

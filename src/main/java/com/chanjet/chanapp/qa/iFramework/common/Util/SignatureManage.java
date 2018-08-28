@@ -2,6 +2,7 @@ package com.chanjet.chanapp.qa.iFramework.common.Util;
 
 //import com.google.gson.JsonObject;
 import com.alibaba.fastjson.JSONObject;
+import com.chanjet.chanapp.qa.iFramework.common.Util.*;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.bouncycastle.util.encoders.Base64;
@@ -41,7 +42,7 @@ public class SignatureManage {
 	 */
 	public String sign(String datas, String pemFile,Map<String, Object> paramsMap) throws Exception {
 		PrivateKey privateKey = loadPrivateKeyOfPem(pemFile);
-		Map<String, Object> claims = JwtParamBuilder.build().setSubject("e-commerce").setExpirySeconds(30000)
+		Map<String, Object> claims = com.chanjet.chanapp.qa.iFramework.common.Util.JwtParamBuilder.build().setSubject("e-commerce").setExpirySeconds(30000)
 				.getClaims();
 		// 默认规则是当前参数+appsecret，组成签名的原值
 		String value = datas;

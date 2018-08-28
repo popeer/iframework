@@ -1,5 +1,6 @@
 package com.chanjet.chanapp.qa.iFramework.common.Util;
 
+import com.chanjet.chanapp.qa.iFramework.common.Util.*;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 
@@ -96,7 +97,7 @@ public final class StringUtils {
 
             for(int i = 0; i < ch.length; ++i) {
                 char c = ch[i];
-                if(!CharUtil.isCJKWord(c)) {
+                if(!com.chanjet.chanapp.qa.iFramework.common.Util.CharUtil.isCJKWord(c)) {
                     return false;
                 }
             }
@@ -111,7 +112,7 @@ public final class StringUtils {
         } else {
             for(int i = 0; i < str.length(); ++i) {
                 char c = str.charAt(i);
-                if(CharUtil.isCJKWord(c)) {
+                if(com.chanjet.chanapp.qa.iFramework.common.Util.CharUtil.isCJKWord(c)) {
                     return true;
                 }
             }

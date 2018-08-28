@@ -1,5 +1,6 @@
 package com.chanjet.chanapp.qa.iFramework.common;
 
+import com.chanjet.chanapp.qa.iFramework.common.processor.CommandEntity;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.ResponseParameter;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step;
 import com.chanjet.chanapp.qa.iFramework.Entity.Result;
@@ -20,5 +21,5 @@ public interface IVerifier {
      * @param preExecutedResults 该步之前步骤的结果集合
      * @Date: 1/4/18 16:04
      */
-    Result VerifyResult(Step result, List<ResponseParameter> responseParams, Map<String, String> entry, List<Object> preExecutedResults) throws Exception;
+    Result VerifyResult(Step result, List<ResponseParameter> responseParams, Map<String, String> entry, List<Object> preExecutedResults, CommandEntity commandEntity) throws Exception;
 }

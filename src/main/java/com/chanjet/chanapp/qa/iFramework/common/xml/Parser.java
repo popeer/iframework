@@ -1,15 +1,15 @@
 package com.chanjet.chanapp.qa.iFramework.common.xml;
 
 import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONPath;
-import com.chanjet.chanapp.qa.iFramework.common.Util.StringUtils;
 import com.chanjet.chanapp.qa.iFramework.common.Util.Codec;
+import com.chanjet.chanapp.qa.iFramework.common.Util.DateUtil;
+import com.chanjet.chanapp.qa.iFramework.common.Util.StringUtils;
 import com.chanjet.chanapp.qa.iFramework.common.processor.CommandEntity;
 import com.chanjet.chanapp.qa.iFramework.common.xml.Entity.*;
 import org.apache.commons.digester3.Digester;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.dom4j.Document;
@@ -34,65 +34,6 @@ public class Parser {
     public Properties sysDataPro;
 
     public List<Map<String, String>> excelData;
-
-    @Test
-    public void getS() throws Exception{
-//        Digester digester = new Digester();
-//        //指定它不要用DTD验证XML文档的合法性——这是因为我们没有为XML文档定义DTD
-//        digester.setValidating(false);
-//
-//        digester.addObjectCreate("MyTempCase", MyTempCase.class);
-//        digester.addSetProperties("MyTempCase");
-//        digester.addObjectCreate("MyTempCase/Request", Request.class);
-//        digester.addSetProperties("MyTempCase/Request");
-//        digester.addSetNext("MyTempCase/Request", "addRequest");
-//
-//        String xmlStr = "<MyTempCase name=\"PGCreateGroupV5ReqArgs\">\n" +
-//                "    <Request id=\"123\" title=\"hahaha\">\n" +
-//                "    </Request>\n" +
-//                "    <Request id=\"456\" title=\"eew\">\n" +
-//                "    </Request>\n" +
-//                "</MyTempCase>";
-//        MyTempCase myTempCase = digester.parse(new StringReader(xmlStr));
-//
-//        log.error("mytempcase is " + myTempCase);
-    }
-
-    @Test
-    public void getSuiteNew() throws Exception{
-
-        initXmlRule();
-
-//        String xmlStr = "<TestCaseNode name=\"test\" author=\"houhaijia\">\n" +
-//                "    <Step name=\"PGCreateGroupV5ReqArgs\" >\n" +
-//                "        <Request>\n" +
-//                "            <Parameter name=\"name\" value=\"ddd\" />\n" +
-//                "            <Parameter name=\"tags\" value=\"test\" />\n" +
-//                "            <Parameter name=\"joinApprovedType\" value=\"2\" />\n" +
-//                "            <Parameter name=\"introduce\" value=\"testintroduce\" />\n" +
-//                "            <Parameter name=\"enableSearched\" value=\"1\" />\n" +
-//                "        </Request>\n" +
-//                "        <Response>\n" +
-//                "            <Expect>\n" +
-//                "                <Parameter name=\"statusCode\" value=\"200\" />\n" +
-//                "                <Parameter name=\"name\" value=\"haha\" />\n" +
-//                "            </Expect>\n" +
-//                "            <Context>\n" +
-//                "                <Parameter name=\"uri\" value=\"www.baidu.com\" />\n" +
-//                "            </Context>\n" +
-//                "        </Response>\n" +
-//                "    </Step>\n" +
-//                "</TestCaseNode>";
-//
-//        TestCaseNode mySuite = digester.parse(new StringReader(xmlStr));
-//        log.error(mySuite);
-
-        InputStream xmlsource  = ClassLoader.getSystemResourceAsStream("testCases/Cenc/testGetBssProductInfoByGet.xml");
-        String xmlDodumentString = inputStream2String(xmlsource);
-        TestCaseNode xmlTestCaseNode = digester.parse(new StringReader(xmlDodumentString));
-
-        log.info((xmlTestCaseNode));
-    }
 
     public List<RequestParameter> getRequestDataFromCaseForJar(Step testStep, List<Object> preExecutedResults) throws IOException{
         List<RequestParameter> requestParams = new ArrayList<RequestParameter>();
@@ -120,10 +61,15 @@ public class Parser {
         Map<String, String> requestParams = new HashMap<String, String>();
         Request request = testStep.getRequest();
         for(RequestParameter parameter : request.getParameters()){
-            RequestParameter newparameter = getRequestParams(parameter, preExecutedResults, null);
-            requestParams.put(
-                    newparameter.getName(),
-                    actionRequestParameter(newparameter.getAction(), getParameterValueFromSysPro(newparameter, preExecutedResults)));
+            if(null == parameter.getBodyData()){
+                RequestParameter newparameter = getRequestParams(parameter, preExecutedResults, null);
+                requestParams.put(
+                        newparameter.getName(),
+                        actionRequestParameter(newparameter.getAction(), getParameterValueFromSysPro(newparameter, preExecutedResults)));
+            } else {
+
+            }
+
         }
         return requestParams;
     }
@@ -186,15 +132,19 @@ public class Parser {
             return commandEntity;
         }
 
-        if(!StringUtils.isEmptyOrSpace(step.getDburl()) && (StringUtils.isEmptyOrSpace(commandEntity.getDbURL()))){
+        // TODO: 1/29/18 暂时注销下面这行判断，因为当一个用例里有多个数据库源连接时候，需要更新commandEntity的数据库连接参数
+//        if(!StringUtils.isEmptyOrSpace(step.getDburl()) && (StringUtils.isEmptyOrSpace(commandEntity.getDbURL()))){
+        if(!StringUtils.isEmptyOrSpace(step.getDburl())){
             commandEntity.setDbURL(step.getDburl());
         }
 
-        if(!StringUtils.isEmptyOrSpace(step.getUid()) && (StringUtils.isEmptyOrSpace(commandEntity.getUid()))){
+//        if(!StringUtils.isEmptyOrSpace(step.getUid()) && (StringUtils.isEmptyOrSpace(commandEntity.getUid()))){
+        if(!StringUtils.isEmptyOrSpace(step.getUid())) {
             commandEntity.setUid(step.getUid());
         }
 
-        if(!StringUtils.isEmptyOrSpace(step.getPwd()) && (StringUtils.isEmptyOrSpace(commandEntity.getPwd()))){
+//        if(!StringUtils.isEmptyOrSpace(step.getPwd()) && (StringUtils.isEmptyOrSpace(commandEntity.getPwd()))){
+        if(!StringUtils.isEmptyOrSpace(step.getPwd())){
             commandEntity.setPwd(step.getPwd());
         }
 
@@ -320,7 +270,7 @@ public class Parser {
                 Integer sequence = Integer.parseInt(s);
                 switch (preExecutedResults.get(sequence).getClass().getName()) {
                     case "com.alibaba.fastjson.JSONObject":
-                        com.alibaba.fastjson.JSONObject jsonObject = (com.alibaba.fastjson.JSONObject) preExecutedResults.get(sequence);
+                        JSONObject jsonObject = (JSONObject) preExecutedResults.get(sequence);
                         if(jsonObject.containsKey(value.substring(1, value.length() - 1))) {
                             value = jsonObject.get(value.substring(1, value.length() - 1)).toString();
                         }
@@ -328,14 +278,14 @@ public class Parser {
                     case "java.util.ArrayList":
                         List<Object> results = (ArrayList) preExecutedResults.get(sequence);
                         if ((null != results) && (2 == results.size())) {
-                            com.alibaba.fastjson.JSONObject innerObject = (com.alibaba.fastjson.JSONObject) results.get(0);
+                            JSONObject innerObject = (JSONObject) results.get(0);
                             if(innerObject.containsKey(value.substring(1, value.length() - 1))) {
                                 value = innerObject.get(value.substring(1, value.length() - 1)).toString();
                             }
                             continue;
                         }
                     case "java.lang.String":
-                        com.alibaba.fastjson.JSONObject jsonStringObject = JSONObject.parseObject(preExecutedResults.get(sequence).toString());
+                        JSONObject jsonStringObject = JSONObject.parseObject(preExecutedResults.get(sequence).toString());
                         if(jsonStringObject.containsKey(value.substring(1, value.length() - 1))){
                             value = jsonStringObject.get(value.substring(1, value.length() - 1)).toString();
                         }
@@ -379,21 +329,60 @@ public class Parser {
 
     //定义了offlineFlag，就不能定义keyword,否则走不到offlineFlag的逻辑
     private String exchangeValue(RequestParameter parameter, List<Object> preExecutedResults, String newValue) {
-        if(!StringUtils.isEmptyOrSpace(parameter.getOfflineFlag()) && parameter.getOfflineFlag().equals("1")) {
-            JSONObject jsonObject = new JSONObject();
-            if (StringUtils.isEmptyOrSpace(parameter.getType()) || parameter.getType().toLowerCase().equals("json")) {
-                jsonObject = JSONObject.parseObject(newValue);
-                return synonymousSubstitution(jsonObject, preExecutedResults, parameter.getSequence(), parameter.getKeyword());
-            } else if (parameter.getType().toLowerCase().equals("array")) {
-                JSONArray jsonArray = JSONArray.parseArray(newValue);
-                jsonObject = (JSONObject) jsonArray.get(0);
-                return "[" + synonymousSubstitution(jsonObject, preExecutedResults, parameter.getSequence(), parameter.getKeyword()) + "]";
-            } else if (parameter.getType().toLowerCase().equals("string")) {
+        if(!StringUtils.isEmptyOrSpace(parameter.getOfflineFlag())){
+            switch (parameter.getOfflineFlag()){
+                case "1":
+                    JSONObject jsonObject = new JSONObject();
+                    if (StringUtils.isEmptyOrSpace(parameter.getType()) || parameter.getType().toLowerCase().equals("json")) {
+                        jsonObject = JSONObject.parseObject(newValue);
+                        return synonymousSubstitution(jsonObject, preExecutedResults, parameter.getSequence(), parameter.getKeyword());
+                    } else if (parameter.getType().toLowerCase().equals("array")) {
+                        JSONArray jsonArray = JSONArray.parseArray(newValue);
+                        jsonObject = (JSONObject) jsonArray.get(0);
+                        return "[" + synonymousSubstitution(jsonObject, preExecutedResults, parameter.getSequence(), parameter.getKeyword()) + "]";
+                    } else if (parameter.getType().toLowerCase().equals("string")) {
 
+                    }
+                    break;
+                case "2":
+                    if(StringUtils.isNotEmpty(parameter.getRegex())){
+                        String[] regex = parameter.getRegex().split(",");
+                        for(String s : regex){
+                            newValue = newValue.replace(s, initCustomParam(s));
+                        }
+                    }
+                    break;
+                default:
+                    break;
             }
         }
+
         return newValue;
 
+    }
+
+    private String initCustomParam(String regex){
+        switch (regex){
+            case "random%mobile%":
+                return generateMobileNumber();
+            case "get%mobile%":
+                return generateSolidMobileNumber();
+            case "random%string4%":
+                return getRandomString(4);
+            case "random%string8%":
+                return getRandomString(8);
+            case "random%string15%":
+                return getRandomString(15);
+            case "random%email%":
+                return getRandomString(8) + "@chanjettest.com";
+            case "random%now%":
+                return generateNow("yyyy-MM-dd");
+            case "random%guid%":
+                return generateGUID();
+            default:
+                break;
+        }
+        return regex;
     }
 
     //定义了getSequence_type_keyword，就不能定义keyword,否则走不到sequence_type_keyword的逻辑
@@ -503,6 +492,11 @@ public class Parser {
             }
         }
 
+        //bugfix: 参数值为null的话，在添加到http请求参数map对象时会报非法参数异常
+        if(null == newValue){
+            newValue = "";
+        }
+
         if(!StringUtils.isEmptyOrSpace(parameter.getSequence_type_resultPath_valuePath())){
             newValue = processResultPathAndValuePath(parameter, preExecutedResults, newValue);
         }
@@ -544,6 +538,13 @@ public class Parser {
         return newValue;
     }
 
+    /**
+     * @Auther: haijia
+     * @Description:从之前的请求参数里获取指定的值，来替换参数里的值，并返回完整的参数内容
+     * @param parameter
+     * @param newValue
+     * @Date: 1/29/18 14:36
+     */
     private String processParamTypeKey(RequestParameter parameter, String newValue) {
         String[] logicalValues = parameter.getParam_type_key().split(",");
         for(String type_keywords : logicalValues){
@@ -725,7 +726,7 @@ public class Parser {
                 if(excelParams.get(excelColName).startsWith("#") && excelParams.get(excelColName).endsWith("#")){
                     switch (preExecutedResults.get(sequence).getClass().getName()){
                         case "com.alibaba.fastjson.JSONObject":
-                            com.alibaba.fastjson.JSONObject jsonObject = (com.alibaba.fastjson.JSONObject)preExecutedResults.get(sequence);
+                            JSONObject jsonObject = (JSONObject)preExecutedResults.get(sequence);
                             if(jsonObject.containsKey(excelParams.get(excelColName).substring(1, excelParams.get(excelColName).length() - 1))){
                                 return jsonObject.get(excelParams.get(excelColName).substring(1, excelParams.get(excelColName).length() - 1)).toString();
                             }
@@ -733,14 +734,14 @@ public class Parser {
                         case "java.util.ArrayList":
                             List<Object> results = (ArrayList)preExecutedResults.get(sequence);
                             if((null != results) && (2 == results.size())) {
-                                com.alibaba.fastjson.JSONObject innerObject = (com.alibaba.fastjson.JSONObject) results.get(0);
+                                JSONObject innerObject = (JSONObject) results.get(0);
                                 if(innerObject.containsKey(excelParams.get(excelColName).substring(1, excelParams.get(excelColName).length() - 1))){
                                     return innerObject.get(excelParams.get(excelColName).substring(1, excelParams.get(excelColName).length() - 1)).toString();
                                 }
                             }
                             continue;
                         case "java.lang.String":
-                            com.alibaba.fastjson.JSONObject jsonStringObject = JSONObject.parseObject(preExecutedResults.get(sequence).toString());
+                            JSONObject jsonStringObject = JSONObject.parseObject(preExecutedResults.get(sequence).toString());
                             if(jsonStringObject.containsKey(excelParams.get(excelColName).substring(1, excelParams.get(excelColName).length() - 1))){
                                 return jsonStringObject.get(excelParams.get(excelColName).substring(1, excelParams.get(excelColName).length() - 1)).toString();
                             }
@@ -774,158 +775,183 @@ public class Parser {
     }
 
     private String synonymousSubstitution(JSONObject jsonObject, List<Object> preExecutedResults, String sequence, String keyword){
+
+        if(null == jsonObject){
+            return "";
+        }
+
         String[] sequences = new String[0];
         if(!StringUtils.isEmptyOrSpace(sequence)){
             sequences = sequence.split("_");
         }
 
         for (Map.Entry<String, Object> entry : jsonObject.entrySet()) {
+            if(String.valueOf(entry.getValue()).startsWith("{") && String.valueOf(entry.getValue()).endsWith("}")){
+                try{
+                    entry.setValue(synonymousSubstitution(JSONObject.parseObject(String.valueOf(entry.getValue())), preExecutedResults, sequence, keyword));
+                } catch (JSONException ex){
 
-            switch (String.valueOf(entry.getValue())){
-                case "random%mobile%":
-                    entry.setValue(generateMobileNumber());
-                    break;
-                case "get%mobile%":
-                    entry.setValue(generateSolidMobileNumber());
-                    break;
-                case "special#registCode#":
-                    for(String s : sequences){
-                        Integer index = Integer.parseInt(s);
-                        if("com.alibaba.fastjson.JSONObject" == preExecutedResults.get(index).getClass().getName()) {
-                            com.alibaba.fastjson.JSONObject preResult = (com.alibaba.fastjson.JSONObject) preExecutedResults.get(index);
-                            if(preResult.containsKey("registCode")){
-                                entry.setValue(preResult.get("registCode").toString());
-                                break;
-                            } else{
-                                log.debug("Attention: Request Parameter Not Found Out " + entry.getKey() + " in preResult for keyword " + "registCode" + " sequence: " + index);
-                            }
+                }
+            }
 
-                            continue;
+            generateCustomParam(preExecutedResults, keyword, sequences, entry);
+        }
+
+        return jsonObject.toJSONString();
+    }
+
+    private void generateCustomParam(List<Object> preExecutedResults, String keyword, String[] sequences, Map.Entry<String, Object> entry) {
+        switch (String.valueOf(entry.getValue())){
+            case "random%mobile%":
+                entry.setValue(generateMobileNumber());
+                break;
+            case "get%mobile%":
+                entry.setValue(generateSolidMobileNumber());
+                break;
+            case "special#registCode#":
+                for(String s : sequences){
+                    Integer index = Integer.parseInt(s);
+                    if("com.alibaba.fastjson.JSONObject" == preExecutedResults.get(index).getClass().getName()) {
+                        JSONObject preResult = (JSONObject) preExecutedResults.get(index);
+                        if(preResult.containsKey("registCode")){
+                            entry.setValue(preResult.get("registCode").toString());
+                            break;
                         } else{
-                            log.debug("Attention: Request Parameter Not Found Out " + entry.getKey());
+                            log.debug("Attention: Request Parameter Not Found Out " + entry.getKey() + " in preResult for keyword " + "registCode" + " sequence: " + index);
                         }
-                    }
-                    break;
-                case "special#userId#":
-                    for(String s : sequences){
-                        Integer index = Integer.parseInt(s);
-                        if("com.alibaba.fastjson.JSONObject" == preExecutedResults.get(index).getClass().getName()) {
-                            com.alibaba.fastjson.JSONObject preResult = (com.alibaba.fastjson.JSONObject) preExecutedResults.get(index);
-                            if(preResult.containsKey("userId")){
-                                entry.setValue(preResult.get("userId").toString());
-                                break;
-                            } else{
-                                log.debug("Attention: Request Parameter Not Found Out " + entry.getKey() + " in preResult for keyword " + keyword);
-                            }
 
-                            continue;
+                        continue;
+                    } else{
+                        log.debug("Attention: Request Parameter Not Found Out " + entry.getKey());
+                    }
+                }
+                break;
+            case "special#userId#":
+                for(String s : sequences){
+                    Integer index = Integer.parseInt(s);
+                    if("com.alibaba.fastjson.JSONObject" == preExecutedResults.get(index).getClass().getName()) {
+                        JSONObject preResult = (JSONObject) preExecutedResults.get(index);
+                        if(preResult.containsKey("userId")){
+                            entry.setValue(preResult.get("userId").toString());
+                            break;
                         } else{
-                            log.debug("Attention: Request Parameter Not Found Out " + entry.getKey());
+                            log.debug("Attention: Request Parameter Not Found Out " + entry.getKey() + " in preResult for keyword " + keyword);
                         }
+
+                        continue;
+                    } else{
+                        log.debug("Attention: Request Parameter Not Found Out " + entry.getKey());
                     }
+                }
 
-                    break;
-                case "special#orgId#":
-                    for(String s : sequences){
-                        Integer index = Integer.parseInt(s);
-                        if("com.alibaba.fastjson.JSONObject" == preExecutedResults.get(index).getClass().getName()) {
-                            com.alibaba.fastjson.JSONObject preResult = (com.alibaba.fastjson.JSONObject) preExecutedResults.get(index);
-                            if(preResult.containsKey("orgId")){
-                                entry.setValue(preResult.get("orgId").toString());
-                                break;
-                            } else{
-                                log.debug("Attention: Request Parameter Not Found Out " + entry.getKey() + " in preResult for keyword " + keyword);
-                            }
-
-                            continue;
+                break;
+            case "special#orgId#":
+                for(String s : sequences){
+                    Integer index = Integer.parseInt(s);
+                    if("com.alibaba.fastjson.JSONObject" == preExecutedResults.get(index).getClass().getName()) {
+                        JSONObject preResult = (JSONObject) preExecutedResults.get(index);
+                        if(preResult.containsKey("orgId")){
+                            entry.setValue(preResult.get("orgId").toString());
+                            break;
                         } else{
-                            log.debug("Attention: Request Parameter Not Found Out " + entry.getKey());
+                            log.debug("Attention: Request Parameter Not Found Out " + entry.getKey() + " in preResult for keyword " + keyword);
                         }
+
+                        continue;
+                    } else{
+                        log.debug("Attention: Request Parameter Not Found Out " + entry.getKey());
                     }
+                }
 
-                    break;
-                case "special#auth_code#":
-                    for(String s : sequences){
-                        Integer index = Integer.parseInt(s);
-                        if("com.alibaba.fastjson.JSONObject" == preExecutedResults.get(index).getClass().getName()) {
-                            com.alibaba.fastjson.JSONObject preResult = (com.alibaba.fastjson.JSONObject) preExecutedResults.get(index);
-                            if(preResult.containsKey("auth_code")){
-                                entry.setValue(preResult.get("auth_code").toString());
-                                break;
-                            } else{
-                                log.debug("Attention: Request Parameter Not Found Out " + entry.getKey() + " in preResult for keyword " + keyword);
-                            }
-
-                            continue;
-                        } else if("java.util.ArrayList" == preExecutedResults.get(index).getClass().getName()) {
-                            ArrayList<JSONObject> tempList = (java.util.ArrayList)preExecutedResults.get(index);
-                                for (JSONObject item : tempList){
-                                    entry.setValue(item.get(keyword));
-                                    break;
-                                }
-                        } else if("java.lang.String" == preExecutedResults.get(index).getClass().getName()) {
-                            com.alibaba.fastjson.JSONObject jsonStringObject = JSONObject.parseObject(preExecutedResults.get(index).toString());
-                            if(jsonStringObject.containsKey("auth_code")){
-                                entry.setValue(jsonStringObject.get("auth_code").toString());
-                                break;
-                            }
-                            continue;
-                        } else {
-                            log.debug("Attention: Request Parameter Not Found Out " + entry.getKey());
+                break;
+            case "special#auth_code#":
+                for(String s : sequences){
+                    Integer index = Integer.parseInt(s);
+                    if("com.alibaba.fastjson.JSONObject" == preExecutedResults.get(index).getClass().getName()) {
+                        JSONObject preResult = (JSONObject) preExecutedResults.get(index);
+                        if(preResult.containsKey("auth_code")){
+                            entry.setValue(preResult.get("auth_code").toString());
+                            break;
+                        } else{
+                            log.debug("Attention: Request Parameter Not Found Out " + entry.getKey() + " in preResult for keyword " + keyword);
                         }
-                    }
 
-                    break;
-                case "random%string4%":
-                    entry.setValue(getRandomString(4));
-                    break;
-                case "random%string8%":
-                    entry.setValue(getRandomString(8));
-                    break;
-                case "random%string15%":
-                    entry.setValue(getRandomString(15));
-                    break;
-                case "random%email%":
-                    entry.setValue(getRandomString(8) + "@chanjettest.com");
-                    break;
-                case "special%startTm%":
-                    Date currentDate = new Date();
+                        continue;
+                    } else if("java.util.ArrayList" == preExecutedResults.get(index).getClass().getName()) {
+                        ArrayList<JSONObject> tempList = (ArrayList)preExecutedResults.get(index);
+                            for (JSONObject item : tempList){
+                                entry.setValue(item.get(keyword));
+                                break;
+                            }
+                    } else if("java.lang.String" == preExecutedResults.get(index).getClass().getName()) {
+                        JSONObject jsonStringObject = JSONObject.parseObject(preExecutedResults.get(index).toString());
+                        if(jsonStringObject.containsKey("auth_code")){
+                            entry.setValue(jsonStringObject.get("auth_code").toString());
+                            break;
+                        }
+                        continue;
+                    } else {
+                        log.debug("Attention: Request Parameter Not Found Out " + entry.getKey());
+                    }
+                }
+
+                break;
+            case "random%string4%":
+                entry.setValue(getRandomString(4));
+                break;
+            case "random%string8%":
+                entry.setValue(getRandomString(8));
+                break;
+            case "random%string15%":
+                entry.setValue(getRandomString(15));
+                break;
+            case "random%email%":
+                entry.setValue(getRandomString(8) + "@chanjettest.com");
+                break;
+            case "special%startTm%":
+                Date currentDate = new Date();
 //                    entry.setValue(currentDate.toInstant().minusSeconds(5).toEpochMilli());
-                    currentDate.setTime(currentDate.getTime() - 5000);
-                    entry.setValue(currentDate.getTime());
-                    break;
-                case "special%endTm%":
-                    entry.setValue(new Date().getTime());
-                    break;
-                case "get#premobile#":
-                    for(String s : sequences){
-                        Integer index = Integer.parseInt(s);
-                        if("com.alibaba.fastjson.JSONObject" == preExecutedResults.get(index).getClass().getName()) {
-                            com.alibaba.fastjson.JSONObject preResult = (com.alibaba.fastjson.JSONObject) preExecutedResults.get(index);
-                            if(preResult.containsKey(keyword)){
-                                entry.setValue(preResult.get(keyword).toString());
-                                break;
-                            } else{
-                                log.debug("Attention: Request Parameter Not Found Out " + entry.getKey() + " in preResult for keyword " + "registCode" + " sequence: " + index);
-                            }
-
-                            continue;
-                        } if("java.lang.String" == preExecutedResults.get(index).getClass().getName()) {
-                            String preResult = (String) preExecutedResults.get(index);
-                            com.alibaba.fastjson.JSONObject preJsonResult = com.alibaba.fastjson.JSONObject.parseObject(preResult);
-                            if(preJsonResult.containsKey(keyword)){
-                                entry.setValue(preJsonResult.get(keyword).toString());
-                                break;
-                            } else{
-                                log.debug("Attention: Request Parameter Not Found Out " + entry.getKey() + " in preResult for keyword " + "registCode" + " sequence: " + index);
-                            }
+                currentDate.setTime(currentDate.getTime() - 5000);
+                entry.setValue(currentDate.getTime());
+                break;
+            case "special%endTm%":
+                entry.setValue(new Date().getTime());
+                break;
+            case "get#premobile#":
+                for(String s : sequences){
+                    Integer index = Integer.parseInt(s);
+                    if("com.alibaba.fastjson.JSONObject" == preExecutedResults.get(index).getClass().getName()) {
+                        JSONObject preResult = (JSONObject) preExecutedResults.get(index);
+                        if(preResult.containsKey(keyword)){
+                            entry.setValue(preResult.get(keyword).toString());
+                            break;
                         } else{
-                            log.debug("Attention: Request Parameter Not Found Out " + entry.getKey());
+                            log.debug("Attention: Request Parameter Not Found Out " + entry.getKey() + " in preResult for keyword " + "registCode" + " sequence: " + index);
                         }
-                    }
 
-                    break;
-                default:
+                        continue;
+                    } if("java.lang.String" == preExecutedResults.get(index).getClass().getName()) {
+                        String preResult = (String) preExecutedResults.get(index);
+                        JSONObject preJsonResult = JSONObject.parseObject(preResult);
+                        if(preJsonResult.containsKey(keyword)){
+                            entry.setValue(preJsonResult.get(keyword).toString());
+                            break;
+                        } else{
+                            log.debug("Attention: Request Parameter Not Found Out " + entry.getKey() + " in preResult for keyword " + "registCode" + " sequence: " + index);
+                        }
+                    } else{
+                        log.debug("Attention: Request Parameter Not Found Out " + entry.getKey());
+                    }
+                }
+
+                break;
+            case "random%now%":
+                entry.setValue(generateNow("yyyy-MM-dd"));
+                break;
+            case "random%guid%":
+                entry.setValue(generateGUID());
+                break;
+            default:
 //                    log.debug("go to default logic in Method synonymousSubstitution for value:" + entry.getValue());
 //                    if(!StringUtils.isEmptyOrSpace(String.valueOf(entry.getValue()))){
 //                        String entryValue = String.valueOf(entry.getValue());
@@ -946,11 +972,16 @@ public class Parser {
 //                        }
 //
 //                    }
-                    break;
-            }
+                break;
         }
+    }
 
-        return jsonObject.toString();
+    private static String generateGUID(){
+        return UUID.randomUUID().toString();
+    }
+
+    private static String generateNow(String format){
+        return DateUtil.format(new Date(), format);
     }
 
     private String generateSolidMobileNumber(){
@@ -1105,6 +1136,32 @@ public class Parser {
 
 
     }
+
+//    public String decrypt(String encText){
+//        if(StringUtils.isEmptyOrSpace(encText)){
+//            return encText;
+//        }
+//
+//        try {
+//            HttpClient httpClient = new HttpClient();
+//            PostMethod method = new PostMethod("http://cenc.chanapp.chanjet.com/special/v1/product/decodeByChallengeCode");
+//            method.getParams().setParameter("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+//            method.getParams().setParameter("Accept", "text/plain");
+//            method.addParameter("appKey", "");
+//            method.addParameter("encText", encText);
+//            method.addParameter("clientChallengeCode", "");
+//
+//            httpClient.executeMethod(method);
+//            String body = method.getResponseBodyAsString();
+//            log.info("body=" + body);
+//
+//            JSONObject resultObject = JSONObject.parseObject(body);
+//            return resultObject.get("value").toString();
+//        } catch (Exception ex){
+//            log.error("Fail to descrypt text:" + encText);
+//        }
+//        return "";
+//    }
 
     public static String JM(String inStr) {
         char[] a = inStr.toCharArray();
