@@ -1,3 +1,7 @@
+This project is an interface testing platform for internet domain. 1. support RPC & Http(s) protocol interface.2. support scenario interface testing, which resolves a problem of transferring values of parameters and results of interfaces, and also supply a way of verifying dynamic results. 3. support main current DB such as MySQL、SqlServer、pg,etc.
+
+中文手册：https://blog.csdn.net/popeer/article/details/82857134 
+
 项目用途：解决互联网接口测试数据依赖的通用测试框架。
 说明：
 接口测试用例的接口测试对象是接口，接口的主要特征是它的入参和返回值。
