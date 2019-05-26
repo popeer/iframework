@@ -3,33 +3,33 @@
         "-//Jakarta Apache //DTD digester-rules XML V1.0//EN"
         "digester-rules.dtd">
 <digester-rules>
-    <object-create-rule pattern="testCaseNode" classname="com.chanjet.chanapp.qa.iFramework.common.xml.Entity.TestCaseNode" />
+    <object-create-rule pattern="testCaseNode" classname="com.qa.iFramework.common.xml.Entity.TestCaseNode" />
     <set-properties-rule pattern="testCaseNode">
         <alias attr-name="id" prop-name="id" />
         <alias attr-name="name" prop-name="name" />
     </set-properties-rule>
     <set-next-rule methodname="addTestCases" />
     <pattern value="testCaseNode/case">
-        <object-create-rule classname="com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Step" />
+        <object-create-rule classname="com.qa.iFramework.common.xml.Entity.Step" />
         <set-properties-rule pattern="case">
             <alias attr-name="id" prop-name="id" />
             <alias attr-name="name" prop-name="name" />
         </set-properties-rule>
         <pattern value="testCaseNode/case/request">
-            <object-create-rule classname="com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Request" />
+            <object-create-rule classname="com.qa.iFramework.common.xml.Entity.Request" />
             <set-properties-rule />
             <pattern value="testCaseNode/case/request/parameter">
-                <object-create-rule classname="com.chanjet.chanapp.qa.iFramework.common.xml.Entity.RequestParameter" />
+                <object-create-rule classname="com.qa.iFramework.common.xml.Entity.RequestParameter" />
                 <bean-property-setter-rule pattern="name" propertyname="name" />
                 <bean-property-setter-rule pattern="value" propertyname="value" />
             <set-next-rule methodname="addParameters" />
             </pattern>
         </pattern>
         <pattern value="testCaseNode/case/response">
-            <object-create-rule classname="com.chanjet.chanapp.qa.iFramework.common.xml.Entity.Response" />
+            <object-create-rule classname="com.qa.iFramework.common.xml.Entity.Response" />
             <set-properties-rule />
             <pattern value="testCaseNode/case/response/parameter">
-                <object-create-rule classname="com.chanjet.chanapp.qa.iFramework.common.xml.Entity.ResponseParameter" />
+                <object-create-rule classname="com.qa.iFramework.common.xml.Entity.ResponseParameter" />
                 <bean-property-setter-rule pattern="name" propertyname="name" />
                 <bean-property-setter-rule pattern="value" propertyname="value" />
                 <set-next-rule methodname="addParameters" />

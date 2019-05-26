@@ -10,15 +10,15 @@
 
     </typeHandlers>
     <mappers>
-        <!--<mapper resource="com.chanjet.chanapp.qa.iFramework.common.mapper.IModuleMapper"></mapper>-->
-        <!--<mapper resource="com.chanjet.chanapp.qa.iFramework.common.mapper.IResultMapper"></mapper>-->
-        <!--<mapper resource="com.chanjet.chanapp.qa.iFramework.common.mapper.IUserMapper"></mapper>-->
-        <!--<mapper resource="com.chanjet.chanapp.qa.iFramework.common.mapper.IVersionMapper"></mapper>-->
-        <mapper resource="com/chanjet/chanapp/qa/iFramework/common/mapper/IModuleMapper.xml"></mapper>
-        <mapper resource="com/chanjet/chanapp/qa/iFramework/common/mapper/IResultMapper.xml" ></mapper>
-        <mapper resource="com/chanjet/chanapp/qa/iFramework/common/mapper/IUserMapper.xml" ></mapper>
-        <mapper resource="com/chanjet/chanapp/qa/iFramework/common/mapper/IVersionMapper.xml" ></mapper>
-        <!--<package name="com.chanjet.chanapp.qa.iFramework.common.mapper"></package>-->
+        <!--<mapper resource="com.qa.iFramework.common.mapper.IModuleMapper"></mapper>-->
+        <!--<mapper resource="com.qa.iFramework.common.mapper.IResultMapper"></mapper>-->
+        <!--<mapper resource="com.qa.iFramework.common.mapper.IUserMapper"></mapper>-->
+        <!--<mapper resource="com.qa.iFramework.common.mapper.IVersionMapper"></mapper>-->
+        <mapper resource="com/qa/iFramework/common/mapper/IModuleMapper.xml"></mapper>
+        <mapper resource="com/qa/iFramework/common/mapper/IResultMapper.xml" ></mapper>
+        <mapper resource="com/qa/iFramework/common/mapper/IUserMapper.xml" ></mapper>
+        <mapper resource="com/qa/iFramework/common/mapper/IVersionMapper.xml" ></mapper>
+        <!--<package name="com.qa.iFramework.common.mapper"></package>-->
 	</mappers>
 
 </configuration>

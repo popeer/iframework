@@ -54,7 +54,7 @@ pwd
 数据库访问的密码
 dn
 否
-域名，url里一旦带有这个参数，就会替换测试用例里的url前缀，如http://a.chanjet.com、http://b.chanapp.chanjet.com。
+域名，url里一旦带有这个参数，就会替换测试用例里的url前缀，如http://a.qa.com、http://b.qa.com。
 注意：如果用例里没有写明前缀，那么请求参数里需要带有dn参数，这个dn会和用例里的path进行拼接成完整的url；
 假设用例里没有写明前缀，如果请求参数里不传dn参数，用例会报错，因为找不到用例的url.
 

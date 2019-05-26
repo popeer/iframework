@@ -33,7 +33,7 @@
     </bean>
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
         <property name="basePackage"
-                  value="com.chanjet.chanapp.qa.iFramework.common.mapper"/>
+                  value="com.qa.iFramework.common.mapper"/>
         <property name="sqlSessionFactoryBeanName" value="psqlSessionFactory" />
     </bean>
 
