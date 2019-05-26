@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qa.iFramework.common.mapper.IUserMapper">
+
+    <select id="findUser" resultType="com.qa.iFramework.common.DTO.UserDto">
+        select id,name,memo
+        from qa.user where name=#{name,jdbcType=VARCHAR};
+    </select>
+
+    <update id="updateUser" parameterType="com.qa.iFramework.common.DTO.UserDto">
+        update qa.user
+        <set>
+            <if test="name != null">
+                name = #{name,jdbcType=VARCHAR},
+            </if>
+            <if test="memo != null">
+                memo = #{memo,jdbcType=VARCHAR},
+            </if>
+            <if test="email != null">
+                email = #{email,jdbcType=VARCHAR}
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER};
+    </update>
+
+    <insert id="addUser" parameterType="com.qa.iFramework.common.DTO.UserDto">
+        INSERT INTO qa.user(
+        name,memo)
+        VALUES (
+        #{name,jdbcType=VARCHAR},
+        #{memo,jdbcType=VARCHAR});
+    </insert>
+
+    <update id="deleteUser" parameterType="long">
+          delete from qa.user where id=#{id,jdbcType=INTEGER};
+    </update>
+</mapper>
