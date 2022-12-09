@@ -439,7 +439,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
-            <version>3.2.9.RELEASE</version>
+            <version>6.0.0</version>
             <exclusions>
                 <exclusion>
                     <artifactId>spring-beans</artifactId>
